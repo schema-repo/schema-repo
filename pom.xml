@@ -73,6 +73,8 @@
     <module>server</module>
     <module>client</module>
     <module>bundle</module>
+    <module>zookeeper</module>
+    <module>zk-bundle</module>
   </modules>
 
   <properties>

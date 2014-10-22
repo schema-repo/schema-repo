@@ -26,7 +26,7 @@
 
   <artifactId>schema-repo-parent</artifactId>
   <groupId>org.schemarepo</groupId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
 
   <name>Schema Repository</name>
   <url>http://schemarepo.org</url>

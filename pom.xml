@@ -33,6 +33,20 @@
   <description>Schema Repository parent project</description>
   <packaging>pom</packaging>
 
+  <mailingLists>
+    <mailingList>
+      <name>Main mailing List</name>
+      <subscribe>https://groups.google.com/forum/#!forum/schema-repo</subscribe>
+      <post>schema-repo@googlegroups.com</post>
+      <archive>https://groups.google.com/forum/#!forum/schema-repo</archive>
+    </mailingList>
+  </mailingLists>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/schema-repo/schema-repo/issues</url>
+  </issueManagement>
+
   <modules>
     <module>common</module>
     <module>server</module>

@@ -6,6 +6,8 @@ The primary (and initial) use case for having a schema repo is to ease the seria
 
 Please read the [AVRO-1124](https://issues.apache.org/jira/browse/AVRO-1124) ticket for more information.
 
+Please subscribe to the [mailing list](https://groups.google.com/forum/#!forum/schema-repo) to ask questions or discuss development.
+
 ## Build and run
 
 In order to build and run the schema repo, execute the following commands in the current directory:

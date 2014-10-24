@@ -24,14 +24,21 @@
     <maven>2.2.1</maven>
   </prerequisites>
 
-  <artifactId>schema-repo-parent</artifactId>
   <groupId>org.schemarepo</groupId>
+  <artifactId>schema-repo-parent</artifactId>
   <version>0.1.1-SNAPSHOT</version>
 
   <name>Schema Repository</name>
   <url>http://schemarepo.org</url>
   <description>Schema Repository parent project</description>
   <packaging>pom</packaging>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
 
   <mailingLists>
     <mailingList>
@@ -42,10 +49,24 @@
     </mailingList>
   </mailingLists>
 
+  <scm>
+    <connection>scm:git:git@github.com:schema-repo/schema-repo.git</connection>
+    <developerConnection>scm:git:git@github.com:schema-repo/schema-repo.git</developerConnection>
+    <url>git@github.com:schema-repo/schema-repo.git</url>
+  </scm>
+
   <issueManagement>
     <system>GitHub</system>
     <url>https://github.com/schema-repo/schema-repo/issues</url>
   </issueManagement>
+
+  <developers>
+    <developer>
+      <name>Felix GV</name>
+      <organization>LinkedIn</organization>
+    </developer>
+    <!-- If anyone else wants to be listed as a developer or contributor, please mention it on the mailing list. -->
+  </developers>
 
   <modules>
     <module>common</module>
@@ -125,8 +146,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

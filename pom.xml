@@ -21,7 +21,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <prerequisites>
-    <maven>2.2.1</maven>
+    <maven>3.2.3</maven>
   </prerequisites>
 
   <groupId>org.schemarepo</groupId>
@@ -90,9 +90,12 @@
     <bundle-plugin-version>2.5.3</bundle-plugin-version>
     <compiler-plugin.version>3.1</compiler-plugin.version>
     <jar-plugin.version>2.5</jar-plugin.version>
+    <source-plugin.version>2.2.1</source-plugin.version>
     <javadoc-plugin.version>2.9.1</javadoc-plugin.version>
     <surefire-plugin.version>2.17</surefire-plugin.version>
     <shade-plugin.version>1.7.1</shade-plugin.version>
+    <gpg-plugin.version>1.5</gpg-plugin.version>
+    <sonatype-plugin.version>1.6.3</sonatype-plugin.version>
   </properties>
 
   <!-- dependencyManagement can be used to define dependency versions, scopes, and
@@ -157,6 +160,32 @@
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${jar-plugin.version}</version>
+
+          <!--We want to be able to resuse the test-jars for mapred
+              to test avro-tool
+              see http://maven.apache.org/guides/mini/guide-attached-tests.html
+          -->
+          <executions>
+            <execution>
+              <goals>
+                <goal>test-jar</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire-plugin.version}</version>
           <configuration>
@@ -166,7 +195,7 @@
             </includes>
             <enableAssertions>false</enableAssertions>
             <!-- some IPC tests hang if not run in a separate JVM -->
-            <forkMode>always</forkMode>
+            <!-- forkMode>always</forkMode -->
             <!-- TestSpecificCompiler instantiates a Java compiler to test output results,
                  this does not work with a manifest-only-jar to set the classpath for the javac.
                  This may cause problems on some platforms.
@@ -206,6 +235,19 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${source-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <goals>
+                <goal>jar-no-fork</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${javadoc-plugin.version}</version>
           <configuration>
@@ -228,15 +270,67 @@
           <artifactId>maven-shade-plugin</artifactId>
           <version>${shade-plugin.version}</version>
         </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>${sonatype-plugin.version}</version>
+          <extensions>true</extensions>
+          <configuration>
+            <serverId>ossrh</serverId>
+            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>${gpg-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
     <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
 </project>

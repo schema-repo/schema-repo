@@ -162,11 +162,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${jar-plugin.version}</version>
-
-          <!--We want to be able to resuse the test-jars for mapred
-              to test avro-tool
-              see http://maven.apache.org/guides/mini/guide-attached-tests.html
-          -->
           <executions>
             <execution>
               <goals>
@@ -194,14 +189,6 @@
               <include>**/Test**</include>
             </includes>
             <enableAssertions>false</enableAssertions>
-            <!-- some IPC tests hang if not run in a separate JVM -->
-            <!-- forkMode>always</forkMode -->
-            <!-- TestSpecificCompiler instantiates a Java compiler to test output results,
-                 this does not work with a manifest-only-jar to set the classpath for the javac.
-                 This may cause problems on some platforms.
-                 See http://maven.apache.org/plugins/maven-surefire-plugin/examples/class-loading.html
-                 for more information. -->
-            <useManifestOnlyJar>false</useManifestOnlyJar>
             <!-- configures unit test standard error and standard out to go to a file per test
                  rather than the console. -->
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -250,20 +237,14 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${javadoc-plugin.version}</version>
-          <configuration>
-            <links>
-              <link>http://jackson.codehaus.org/1.9.4/javadoc/</link>
-              <link>http://java.sun.com/products/servlet/2.3/javadoc/</link>
-              <link>http://hadoop.apache.org/common/docs/current/api/</link>
-            </links>
-            <tagletArtifacts>
-              <tagletArtifact>
-                <groupId>org.apache.maven.plugin-tools</groupId>
-                <artifactId>maven-plugin-tools-javadoc</artifactId>
-                <version>${plugin-tools-javadoc.version}</version>
-              </tagletArtifact>
-            </tagletArtifacts>
-          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -305,10 +286,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
       </plugin>
     </plugins>
@@ -331,12 +308,17 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <!-- explicitly define nexus-staging-maven-plugin after other to force exec order -->
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

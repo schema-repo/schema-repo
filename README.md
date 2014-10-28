@@ -14,6 +14,14 @@ In order to build and run the schema repo, execute the following commands in the
 
     $ mvn install
     $ ./run.sh
+
+## Maven artifacts
+
+Maven artifacts for the Schema Repo are published on Sonatype Central Repository, starting with release 0.1.1:
+
+https://oss.sonatype.org/content/repositories/releases/org/schemarepo/
+
+See the official [instructions for integrating with various build tools](https://oss.sonatype.org/content/repositories/releases/org/schemarepo/).
     
 ## Origin story
 

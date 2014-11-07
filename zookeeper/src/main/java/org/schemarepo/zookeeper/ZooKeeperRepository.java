@@ -21,19 +21,17 @@ package org.schemarepo.zookeeper;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.zookeeper.KeeperException;
+
 import org.schemarepo.Repository;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.ValidatorFactory;
-//import org.apache.zookeeper.CreateMode;
-//import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-//import org.apache.zookeeper.data.ACL;
-
-import java.io.IOException;
-//import java.util.ArrayList;
-//import java.util.List;
+import org.schemarepo.server.ConfigKeys;
 
 /**
  * This {@link org.schemarepo.Repository} implementation stores its state using Zookeeper.
@@ -46,44 +44,79 @@ import java.io.IOException;
  * can share the same Zookeeper ensemble and synchronize their state through it.
  */
 public class ZooKeeperRepository implements Repository {
-  private static final String ROOT_ZK_PATH = "/schema-repo";
-  private static final Integer ZK_SESSION_TIMEOUT = 5000;
 
-  ZooKeeper zk;
-  Watcher zkWatcher;
+  private final ValidatorFactory validators;
+
+  CuratorFramework curatorFramework;
 
   @Inject
-  public ZooKeeperRepository(@Named("schema-repo.zookeeper.ensemble") String zkEnsemble,
+  public ZooKeeperRepository(@Named(ConfigKeys.ZK_ENSEMBLE) String zkEnsemble,
+                             @Named(ConfigKeys.ZK_PATH_PREFIX) String zkPathPrefix,
+                             @Named(ConfigKeys.ZK_SESSION_TIMEOUT) Integer zkSessionTimeout,
+                             @Named(ConfigKeys.ZK_CONNECTION_TIMEOUT) Integer zkConnectionTimeout,
+                             @Named(ConfigKeys.ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES) Integer curatorSleepTimeBetweenRetries,
+                             @Named(ConfigKeys.ZK_CURATOR_NUMBER_OF_RETRIES) Integer curatorNumberOfRetries,
                              ValidatorFactory validators) {
-    zkWatcher = new ZooKeeperRepositoryWatcher();
+    this.validators = validators;
 
-    try {
-      zk = new ZooKeeper(zkEnsemble, ZK_SESSION_TIMEOUT, zkWatcher);
-    } catch (IOException e) {
-      e.printStackTrace();
+    if (zkEnsemble == null || zkEnsemble.isEmpty()) {
+      System.out.println("The '" + ConfigKeys.ZK_ENSEMBLE + "' config is missing. Exiting.");
+      System.exit(1);
     }
 
+    System.out.println("Starting ZookeeperRepository with the following parameters:\n" +
+            ConfigKeys.ZK_ENSEMBLE + ": " + zkEnsemble + "\n" +
+            ConfigKeys.ZK_PATH_PREFIX + ": " + zkPathPrefix + "\n" +
+            ConfigKeys.ZK_SESSION_TIMEOUT + ": " + zkSessionTimeout + "\n" +
+            ConfigKeys.ZK_CONNECTION_TIMEOUT + ": " + zkConnectionTimeout + "\n" +
+            ConfigKeys.ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES + ": " + curatorSleepTimeBetweenRetries + "\n" +
+            ConfigKeys.ZK_CURATOR_NUMBER_OF_RETRIES + ": " + curatorNumberOfRetries);
+
+    RetryPolicy retryPolicy = new RetryNTimes(
+            curatorSleepTimeBetweenRetries,
+            curatorNumberOfRetries);
+    CuratorFrameworkFactory.Builder cffBuilder = CuratorFrameworkFactory.builder()
+            .connectString(zkEnsemble)
+            .sessionTimeoutMs(zkSessionTimeout)
+            .connectionTimeoutMs(zkConnectionTimeout)
+            .retryPolicy(retryPolicy);
+
+    // This temporary CuratorFramework is not namespaced and is only used to ensure the
+    // zkPathPrefix is properly initialized
+    CuratorFramework tempCuratorFramework = cffBuilder.build();
+    tempCuratorFramework.start();
+
     try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
+      tempCuratorFramework.blockUntilConnected();
+      tempCuratorFramework.create().forPath(zkPathPrefix);
+      System.out.println("The ZK Path Prefix (" + zkPathPrefix + ") was created in ZK.");
+    } catch (KeeperException.NodeExistsException e) {
+      System.out.println("The ZK Path Prefix (" + zkPathPrefix + ") was found in ZK.");
+    } catch (IllegalArgumentException e) {
+      System.out.println("Got an IllegalArgumentException while attempting to create the " +
+              "ZK Path Prefix (" + zkPathPrefix + "). Exiting.");
       e.printStackTrace();
+      System.exit(1);
+    } catch (Exception e) {
+      System.err.println("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.");
+      e.printStackTrace();
+      System.exit(1);
     }
 
-//    List<ACL> aclList = new ArrayList<ACL>();
-//    aclList.add(new ACL());
-//
-//    try {
-//      zk.create(ROOT_ZK_PATH, null, aclList, CreateMode.PERSISTENT);
-//      System.out.println("The root znode for the schema repo was not found. " +
-//              "It has been created for the first time.");
-//    } catch (KeeperException.NodeExistsException e) {
-//      System.out.println("The znode for the schema repo was found.");
-//    } catch (KeeperException e) {
-//      System.err.println("A KeeperException occurred while trying to create the root znode!");
-//      e.printStackTrace();
-//    } catch (InterruptedException e) {
-//      e.printStackTrace();
-//    }
+    // Once we're certain the zkPathPrefix is present, we initialize the CuratorFramework
+    // we'll use for the rest of the ZK Repository's runtime.
+    String zkPathPrefixWithoutLeadingSlash = zkPathPrefix.substring(1);
+    curatorFramework = cffBuilder.namespace(zkPathPrefixWithoutLeadingSlash).build();
+    curatorFramework.start();
+
+    try {
+      tempCuratorFramework.blockUntilConnected();
+      System.out.println("ZooKeeperRepository startup finished!");
+    } catch (Exception e) {
+      System.err.println("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.");
+      e.printStackTrace();
+      System.exit(1);
+    }
   }
 
   /**

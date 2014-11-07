@@ -61,9 +61,14 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.zookeeper</groupId>
-      <artifactId>zookeeper</artifactId>
-      <version>3.4.6</version>
+      <groupId>org.schemarepo</groupId>
+      <artifactId>schema-repo-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-recipes</artifactId>
+      <version>${curator-recipes.version}</version>
     </dependency>
     <dependency>
       <groupId>javax.inject</groupId>

@@ -122,11 +122,11 @@ public class RepositoryServer {
     @Provides
     @Singleton
     public Server provideServer(
-        @Named(ConfigModule.JETTY_HOST) String host,
-        @Named(ConfigModule.JETTY_PORT) Integer port,
-        @Named(ConfigModule.JETTY_PATH) String path,
-        @Named(ConfigModule.JETTY_HEADER_SIZE) Integer headerSize,
-        @Named(ConfigModule.JETTY_BUFFER_SIZE) Integer bufferSize,
+        @Named(ConfigKeys.JETTY_HOST) String host,
+        @Named(ConfigKeys.JETTY_PORT) Integer port,
+        @Named(ConfigKeys.JETTY_PATH) String path,
+        @Named(ConfigKeys.JETTY_HEADER_SIZE) Integer headerSize,
+        @Named(ConfigKeys.JETTY_BUFFER_SIZE) Integer bufferSize,
         Connector connector,
         GuiceFilter guiceFilter,
         ServletContextHandler handler) {

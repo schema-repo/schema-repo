@@ -1,4 +1,4 @@
-package org.schemarepo.server;
+package org.schemarepo.config;
 
 import java.util.Properties;
 

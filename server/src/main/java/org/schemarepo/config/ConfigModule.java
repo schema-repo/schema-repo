@@ -1,4 +1,4 @@
-package org.schemarepo.server;
+package org.schemarepo.config;
 
 import java.io.PrintStream;
 import java.util.Properties;
@@ -36,7 +36,7 @@ import org.schemarepo.ValidatorFactory;
  * will set a validator named "backwards_compatible" to an instance of the
  * class com.foo.BackwardsCompatible.
  */
-class ConfigModule implements Module {
+public class ConfigModule implements Module {
 
   private static final Properties DEFAULTS = new Properties();
   static {

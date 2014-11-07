@@ -31,7 +31,7 @@ import org.schemarepo.Repository;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.ValidatorFactory;
-import org.schemarepo.server.ConfigKeys;
+import org.schemarepo.config.ConfigKeys;
 
 /**
  * This {@link org.schemarepo.Repository} implementation stores its state using Zookeeper.

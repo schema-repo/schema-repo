@@ -18,6 +18,8 @@
 
 package org.schemarepo;
 
+import org.schemarepo.config.ConfigKeys;
+
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
@@ -62,7 +64,7 @@ import javax.inject.Named;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class FileRepository implements Repository, Closeable {
+public class LocalFileSystemRepository implements Repository, Closeable {
 
   private static final String LOCKFILE = ".repo.lock";
   private static final String SUBJECT_PROPERTIES = "subject.properties";
@@ -77,18 +79,17 @@ public class FileRepository implements Repository, Closeable {
   private boolean closed = false;
 
   /**
-   * Create a FileRepository in the directory path provided. Locks a file
+   * Create a LocalFileSystemRepository in the directory path provided. Locks a file
    * "repository.lock" to ensure no other object or process is running a
-   * FileRepository from the same place. The lock is released if
+   * LocalFileSystemRepository from the same place. The lock is released if
    * {@link #close()} is called, the object is finalized, or the JVM exits.
    *
    * Not all platforms support file locks. See {@link FileLock}
    *
-   * @param repoPath
-   *          The
+   * @param repoPath The path where to store the Repository's state
    */
   @Inject
-  public FileRepository(@Named("schema-repo.file-repo-path") String repoPath, ValidatorFactory validators) {
+  public LocalFileSystemRepository(@Named(ConfigKeys.LOCAL_FILE_SYSTEM_PATH) String repoPath, ValidatorFactory validators) {
     this.validators = validators;
     this.rootDir = new File(repoPath);
     if ((!rootDir.exists() && !rootDir.mkdirs()) || !rootDir.isDirectory()) {
@@ -128,7 +129,7 @@ public class FileRepository implements Repository, Closeable {
 
   private void isValid() {
     if (closed) {
-      throw new IllegalStateException("FileRepository is closed");
+      throw new IllegalStateException("LocalFileSystemRepository is closed");
     }
   }
 

@@ -29,9 +29,9 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestFileRepository extends AbstractTestRepository<FileRepository> {
-  private static final String TEST_PATH = "target/test/TestFileRepository-paths/";
-  private static final String REPO_PATH = "target/test/TestFileRepository/";
+public class TestLocalFileSystemRepository extends AbstractTestRepository<LocalFileSystemRepository> {
+  private static final String TEST_PATH = "target/test/TestLocalFileSystemRepository-paths/";
+  private static final String REPO_PATH = "target/test/TestLocalFileSystemRepository/";
 
   @BeforeClass
   public static void setup() {
@@ -45,14 +45,14 @@ public class TestFileRepository extends AbstractTestRepository<FileRepository> {
   }
 
   @Override
-  protected FileRepository createRepository() {
+  protected LocalFileSystemRepository createRepository() {
     // Clean up the repo's content before giving it out
     rmDir(new File(REPO_PATH));
     return newRepo(REPO_PATH);
   }
 
-  private FileRepository newRepo(String path) {
-      return new FileRepository(path, new ValidatorFactory.Builder().build());
+  private LocalFileSystemRepository newRepo(String path) {
+      return new LocalFileSystemRepository(path, new ValidatorFactory.Builder().build());
   }
 
   @Test
@@ -62,7 +62,7 @@ public class TestFileRepository extends AbstractTestRepository<FileRepository> {
         "/tmp/file_repo/", "/tmp/file_repo/" };
 
     for (String path : paths) {
-      FileRepository r = newRepo(TEST_PATH + path);
+      LocalFileSystemRepository r = newRepo(TEST_PATH + path);
       try {
         File expected = new File(TEST_PATH, path);
         assertTrue("Expected directory not created: " +
@@ -81,7 +81,7 @@ public class TestFileRepository extends AbstractTestRepository<FileRepository> {
   @Test
   public void testReadWritten() throws SchemaValidationException {
     String path = TEST_PATH + "/readWrite";
-    FileRepository r = newRepo(path);
+    LocalFileSystemRepository r = newRepo(path);
     try {
       r.register("sub1", null).register("sc1");
       r.register("sub2", null).register("sc2");
@@ -122,7 +122,7 @@ public class TestFileRepository extends AbstractTestRepository<FileRepository> {
     String multiLineSchema1 = "first line" + endOfLine + "second line";
     String multiLineSchema2 = "first line" + endOfLine + "second line" + endOfLine;
 
-    FileRepository r = newRepo(path);
+    LocalFileSystemRepository r = newRepo(path);
     try {
       r.register("sub1", null).register(multiLineSchema1);
       r.register("sub1", null).register(multiLineSchema2);
@@ -162,13 +162,13 @@ public class TestFileRepository extends AbstractTestRepository<FileRepository> {
     String badPath = TEST_PATH + "/bad";
     new File(TEST_PATH).mkdirs();
     new File(badPath).createNewFile();
-    FileRepository r = newRepo(badPath);
+    LocalFileSystemRepository r = newRepo(badPath);
     r.close();
   }
 
   @Test(expected = IllegalStateException.class)
   public void testCantUseClosedRepo() {
-    FileRepository r = newRepo(TEST_PATH + "/tmp/repo");
+    LocalFileSystemRepository r = newRepo(TEST_PATH + "/tmp/repo");
     r.close();
     r.lookup("nothing");
   }

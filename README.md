@@ -39,17 +39,17 @@ The schema repo gets configured via a .properties file passed as the first comma
 
 All configuration properties are injected via Guice. However, you are not obligated to use Guice if you do not wish to. You can also feed the required properties to the various constructors directly by code, if you wish to wire in your own config management solution.
     
-### File-based Backend
+### Local File System Backend
 
-The file-based backend is a single node, persistent, implementation. For production usage, it is recommended to at least use this backend, and not the in-memory one, otherwise a server shutdown or crash will result in the loss of all of its state. This file-based backend, however, is not considered highly-available nor fault-tolerant, unless you can somehow set its storage path to be on a mounted file-system that you would consider to be highly-available.
+The local file system backend is a single node, persistent, implementation. For production usage, it is recommended to at least use this backend, and not the in-memory one, otherwise a server shutdown or crash will result in the loss of all of its state. This file-based backend, however, is not considered highly-available nor fault-tolerant, unless you can somehow set its storage path to be on a mounted file system that you would consider to be highly-available.
 
 In order to use the file-based backend, set these configuration properties:
 
     # FQCN of the file-based backend:
-    schema-repo.class=org.schemarepo.FileRepository
+    schema-repo.class=org.schemarepo.LocalFileSystemRepository
      
     # Relative or absolute path to where you wish to store the state of the repo:
-    schema-repo.schema-repo.file-repo-path=relative/path/to/storage/directory/
+    schema-repo.local-file-system.path=relative/path/to/storage/directory/
 
 ### ZooKeeper Backend
 

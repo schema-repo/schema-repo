@@ -39,6 +39,8 @@ import com.google.inject.Provides;
 import com.google.inject.servlet.GuiceFilter;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import org.schemarepo.config.ConfigKeys;
+import org.schemarepo.config.ConfigModule;
 
 /**
  * A {@link RepositoryServer} is a stand-alone server for running a

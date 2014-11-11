@@ -30,3 +30,7 @@ The schema repo is a standalone version of the patch submitted on the Apache [AV
 The patch was originally submitted by Jay Kreps and later on substantially refactored by Scott Carey. Some other people then contributed minor fixes and improvements.
 
 The schema repo was separated into a standalone project because it is unclear that Apache Avro is an appropriate parent project for containing it. It was given its own repository in order to ease further development. The whole project is Apache-licensed, so any OSS project can choose to use (or even include) the schema repo.
+
+## Service Endpoints
+
+Endpoint descriptions, endpoints, example command executions and reponses are documented on the [Service Endpoints wiki page](https://github.com/schema-repo/schema-repo/wiki/Service-Endpoints).

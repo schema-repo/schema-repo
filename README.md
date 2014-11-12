@@ -8,14 +8,14 @@ Please read the [AVRO-1124](https://issues.apache.org/jira/browse/AVRO-1124) tic
 
 Please subscribe to the [mailing list](https://groups.google.com/forum/#!forum/schema-repo) to ask questions or discuss development.
 
-## Build and run
+## Build and Run
 
 In order to build and run the schema repo, execute the following commands in the current directory:
 
     $ mvn install
     $ ./run.sh
 
-## Maven artifacts
+## Maven Artifacts
 
 Maven artifacts for the Schema Repo are published on Sonatype Central Repository, starting with release 0.1.1:
 
@@ -23,14 +23,14 @@ https://oss.sonatype.org/content/repositories/releases/org/schemarepo/
 
 See the official [instructions for integrating with various build tools](https://oss.sonatype.org/content/repositories/releases/org/schemarepo/).
     
-## Origin story
+## REST API Documentation
+
+The REST endpoints supported by the Schema Repo, their descriptions, as well as example command executions and reponses are documented on the [Service Endpoints wiki page](https://github.com/schema-repo/schema-repo/wiki/Service-Endpoints).
+
+## Origin Story
 
 The schema repo is a standalone version of the patch submitted on the Apache [AVRO-1124](https://issues.apache.org/jira/browse/AVRO-1124) ticket.
 
 The patch was originally submitted by Jay Kreps and later on substantially refactored by Scott Carey. Some other people then contributed minor fixes and improvements.
 
 The schema repo was separated into a standalone project because it is unclear that Apache Avro is an appropriate parent project for containing it. It was given its own repository in order to ease further development. The whole project is Apache-licensed, so any OSS project can choose to use (or even include) the schema repo.
-
-## Service Endpoints
-
-Endpoint descriptions, endpoints, example command executions and reponses are documented on the [Service Endpoints wiki page](https://github.com/schema-repo/schema-repo/wiki/Service-Endpoints).

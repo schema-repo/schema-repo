@@ -18,7 +18,7 @@
 
 package org.schemarepo;
 
-import org.schemarepo.config.ConfigKeys;
+import org.schemarepo.config.Config;
 
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -89,7 +89,7 @@ public class LocalFileSystemRepository implements Repository, Closeable {
    * @param repoPath The path where to store the Repository's state
    */
   @Inject
-  public LocalFileSystemRepository(@Named(ConfigKeys.LOCAL_FILE_SYSTEM_PATH) String repoPath, ValidatorFactory validators) {
+  public LocalFileSystemRepository(@Named(Config.LOCAL_FILE_SYSTEM_PATH) String repoPath, ValidatorFactory validators) {
     this.validators = validators;
     this.rootDir = new File(repoPath);
     if ((!rootDir.exists() && !rootDir.mkdirs()) || !rootDir.isDirectory()) {

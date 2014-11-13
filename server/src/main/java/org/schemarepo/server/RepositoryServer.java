@@ -39,7 +39,7 @@ import com.google.inject.Provides;
 import com.google.inject.servlet.GuiceFilter;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import org.schemarepo.config.ConfigKeys;
+import org.schemarepo.config.Config;
 import org.schemarepo.config.ConfigModule;
 
 /**
@@ -124,11 +124,11 @@ public class RepositoryServer {
     @Provides
     @Singleton
     public Server provideServer(
-        @Named(ConfigKeys.JETTY_HOST) String host,
-        @Named(ConfigKeys.JETTY_PORT) Integer port,
-        @Named(ConfigKeys.JETTY_PATH) String path,
-        @Named(ConfigKeys.JETTY_HEADER_SIZE) Integer headerSize,
-        @Named(ConfigKeys.JETTY_BUFFER_SIZE) Integer bufferSize,
+        @Named(Config.JETTY_HOST) String host,
+        @Named(Config.JETTY_PORT) Integer port,
+        @Named(Config.JETTY_PATH) String path,
+        @Named(Config.JETTY_HEADER_SIZE) Integer headerSize,
+        @Named(Config.JETTY_BUFFER_SIZE) Integer bufferSize,
         Connector connector,
         GuiceFilter guiceFilter,
         ServletContextHandler handler) {

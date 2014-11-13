@@ -62,13 +62,23 @@
     </dependency>
     <dependency>
       <groupId>org.schemarepo</groupId>
+      <artifactId>schema-repo-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.schemarepo</groupId>
       <artifactId>schema-repo-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.curator</groupId>
       <artifactId>curator-recipes</artifactId>
-      <version>${curator-recipes.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-test</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.inject</groupId>

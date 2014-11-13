@@ -41,7 +41,9 @@ All configuration properties are injected via Guice. However, you are not obliga
     
 ### Local File System Backend
 
-The local file system backend is a single node, persistent, implementation. For production usage, it is recommended to at least use this backend, and not the in-memory one, otherwise a server shutdown or crash will result in the loss of all of its state. This file-based backend, however, is not considered highly-available nor fault-tolerant, unless you can somehow set its storage path to be on a mounted file system that you would consider to be highly-available.
+The local file system backend is a single node, persistent, implementation. For production usage, it is recommended to at least use this backend, and not the in-memory one, otherwise a server shutdown or crash will result in the loss of all of its state.
+
+This file-based backend, however, is not considered highly-available nor fault-tolerant. Even if you could somehow set its storage path to be on a mounted file system that you would consider to be highly-available, the current implementation establishes a lock in the file system for the whole duration of the schema repo's runtime, which fences out other instances from sharing the file system.
 
 In order to use the file-based backend, set these configuration properties:
 
@@ -53,7 +55,9 @@ In order to use the file-based backend, set these configuration properties:
 
 ### ZooKeeper Backend
 
-The ZooKeeper backend stores its state in a ZooKeeper ensemble. This backend implementation is meant to be highly-available, meaning that multiple instances can share the same ZooKeeper ensemble and synchronize their state through it.
+The ZooKeeper backend stores its state in a ZooKeeper ensemble. This backend implementation is meant to be highly-available, meaning that multiple instances can share the same ZooKeeper ensemble and synchronize their state through it. All mutation operations to the schema repo's state are shielded behind a shared lock which is acquired temporarily for the time of the mutation and released afterwards.
+
+Disclaimer: the ZooKeeper backend is still considered experimental.
 
 In order to use the ZooKeeper-based backend, set these configuration properties:
 

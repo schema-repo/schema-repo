@@ -37,7 +37,7 @@ public abstract class AbstractTestRepository<R extends Repository> {
   private static final String BAR = "bar";
   private static final String BAZ = "baz";
 
-  private R repo;
+  protected R repo;
 
   protected abstract R createRepository();
 

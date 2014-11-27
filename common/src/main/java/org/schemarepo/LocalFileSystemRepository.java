@@ -21,7 +21,6 @@ package org.schemarepo;
 import org.schemarepo.config.Config;
 
 import java.io.BufferedWriter;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -64,7 +63,7 @@ import javax.inject.Named;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class LocalFileSystemRepository implements Repository, Closeable {
+public class LocalFileSystemRepository implements Repository {
 
   private static final String LOCKFILE = ".repo.lock";
   private static final String SUBJECT_PROPERTIES = "subject.properties";
@@ -472,20 +471,11 @@ public class LocalFileSystemRepository implements Repository, Closeable {
       }
     }
 
-    private final String endOfLine = System.getProperty("line.separator");
-
     private String readAllAsString(File file) throws FileNotFoundException {
       // a scanner that will read a whole file
-      Scanner s = new Scanner(file, "UTF-8").useDelimiter(endOfLine);
-      StringBuilder strBuilder = new StringBuilder();
+      Scanner s = new Scanner(file, "UTF-8").useDelimiter("\\A");
       try {
-        while (s.hasNext()) {
-          strBuilder.append(s.nextLine());
-          if (s.hasNext()) {
-            strBuilder.append(endOfLine);
-          }
-        }
-        return strBuilder.toString();
+        return s.next();
       } catch (NoSuchElementException e) {
         throw new RuntimeException(
             "file is empty: " + file.getAbsolutePath(), e);

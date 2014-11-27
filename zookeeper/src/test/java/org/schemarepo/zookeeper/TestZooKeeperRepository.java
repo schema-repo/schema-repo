@@ -21,18 +21,24 @@ package org.schemarepo.zookeeper;
 import java.io.IOException;
 import java.util.Date;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingCluster;
 import org.junit.After;
 import org.junit.BeforeClass;
 
+import org.schemarepo.AbstractTestPersistentRepository;
 import org.schemarepo.ValidatorFactory;
 import org.schemarepo.config.Config;
 
-public class TestZooKeeperRepository extends org.schemarepo.AbstractTestRepository<ZooKeeperRepository> {
+public class TestZooKeeperRepository extends AbstractTestPersistentRepository<ZooKeeperRepository> {
   private static final String REPO_PATH = "/schema-repo-tests/" + new Date().toString().replace(' ', '_');
   private static final Integer numberOfServersInTestingCluster = 3;
   private static TestingCluster testingCluster;
   private static String testingClusterConnectionString;
+  private static CuratorFramework zkClient;
 
   @BeforeClass
   public static void setup() {
@@ -41,9 +47,31 @@ public class TestZooKeeperRepository extends org.schemarepo.AbstractTestReposito
       testingCluster.start();
       testingClusterConnectionString = testingCluster.getConnectString();
 
-      // Potentially useful for manual debugging:
+      // Sometimes useful for manual debugging:
       // testingClusterConnectionString = "localhost:2181";
-    } catch (Exception e) {
+
+      RetryPolicy retryPolicy = new RetryNTimes(
+              Config.getIntDefault(Config.ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES),
+              Config.getIntDefault(Config.ZK_CURATOR_NUMBER_OF_RETRIES));
+      CuratorFrameworkFactory.Builder cffBuilder = CuratorFrameworkFactory.builder()
+              .connectString(testingClusterConnectionString)
+              .sessionTimeoutMs(Config.getIntDefault(Config.ZK_SESSION_TIMEOUT))
+              .connectionTimeoutMs(Config.getIntDefault(Config.ZK_CONNECTION_TIMEOUT))
+              .retryPolicy(retryPolicy)
+              .defaultData(new byte[0]);
+
+      zkClient = cffBuilder.build();
+      zkClient.start();
+
+      try {
+        zkClient.blockUntilConnected();
+      } catch (Exception e) {
+        System.err.println("There was an unrecoverable exception during the ZooKeeper session establishment. Aborting.");
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+
+      } catch (Exception e) {
       System.err.println("An exception occurred while trying to start the ZK test cluster!");
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -52,12 +80,19 @@ public class TestZooKeeperRepository extends org.schemarepo.AbstractTestReposito
 
   @After
   public void cleanUp() throws IOException {
-    getRepo().close();
+    try {
+      zkClient.delete().deletingChildrenIfNeeded().forPath(REPO_PATH);
+    } catch (Exception e) {
+      System.err.println("An exception occurred while trying to clean up the ZK test cluster!");
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
+    repo.close();
   }
 
   @Override
   protected ZooKeeperRepository createRepository() {
-    return newRepo(REPO_PATH + "/" + Math.random());
+    return newRepo(REPO_PATH);
   }
 
   private ZooKeeperRepository newRepo(String path) {

@@ -52,6 +52,14 @@ public class InMemoryRepository implements Repository {
     return subjects.values();
   }
 
+  /**
+   * This is a no-op for the InMemoryRepository
+   */
+  @Override
+  public void close() {
+    // no-op
+  }
+
   private static class MemSubject extends Subject {
     private final InMemorySchemaEntryCache schemas = new InMemorySchemaEntryCache();
     private SchemaEntry latest = null;

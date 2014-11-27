@@ -39,6 +39,8 @@ public class Config {
   public static final String JETTY_PATH = JETTY_PREFIX + "path";
   public static final String JETTY_HEADER_SIZE = JETTY_PREFIX + "header.size";
   public static final String JETTY_BUFFER_SIZE = JETTY_PREFIX + "buffer.size";
+  public static final String JETTY_STOP_AT_SHUTDOWN = JETTY_PREFIX + "stop-at-shutdown";
+  public static final String JETTY_GRACEFUL_SHUTDOWN = JETTY_PREFIX + "graceful-shutdown";
 
   // Local file system backend configs
   private static final String LOCAL_FILE_SYSTEM_PREFIX = GLOBAL_PREFIX + "local-file-system.";
@@ -66,6 +68,8 @@ public class Config {
     DEFAULTS.setProperty(JETTY_PATH, "/schema-repo");
     DEFAULTS.setProperty(JETTY_HEADER_SIZE, "16384");
     DEFAULTS.setProperty(JETTY_BUFFER_SIZE, "16384");
+    DEFAULTS.setProperty(JETTY_STOP_AT_SHUTDOWN, "true");
+    DEFAULTS.setProperty(JETTY_GRACEFUL_SHUTDOWN, "3000");
 
     // Zookeeper backend defaults
     DEFAULTS.setProperty(ZK_ENSEMBLE, "");

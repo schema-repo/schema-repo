@@ -122,7 +122,7 @@ public class RESTRepository {
   }
 
   /**
-   * Create a subejct if it does not already exist.
+   * Create a subject if it does not already exist.
    *
    * @param subject
    *          the name of the subject

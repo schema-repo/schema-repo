@@ -84,6 +84,8 @@ The schema repo's REST server implementation uses Jetty. The defaults below will
     schema-repo.jetty.path=/schema-repo
     schema-repo.jetty.header.size=16384
     schema-repo.jetty.buffer.size=16384
+    schema-repo.jetty.stop-at-shutdown=true
+    schema-repo.jetty.graceful-shutdown=3000
     
 ## REST API Documentation
 

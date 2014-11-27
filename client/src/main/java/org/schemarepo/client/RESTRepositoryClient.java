@@ -101,6 +101,14 @@ public class RESTRepositoryClient implements Repository {
     return subjectList;
   }
 
+  /**
+   * This is a no-op for the RESTRepositoryClient
+   */
+  @Override
+  public void close() {
+    // no-op
+  }
+
   private class RESTSubject extends Subject {
 
     private RESTSubject(String name) {

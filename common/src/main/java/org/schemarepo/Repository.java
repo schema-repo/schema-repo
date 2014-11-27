@@ -18,6 +18,8 @@
 
 package org.schemarepo;
 
+import java.io.Closeable;
+
 /**
  * A {@link Repository} is a collection of {@link Subject}s. A {@link Subject}
  * can be looked up by name on a {@link Repository}, or registered.<br/>
@@ -29,7 +31,7 @@ package org.schemarepo;
  * <br/>
  *
  */
-public interface Repository {
+public interface Repository extends Closeable {
 
   /**
    * Attempt to create a Subject with the given name and validator.

@@ -18,6 +18,7 @@
 
 package org.schemarepo;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.inject.Inject;
@@ -28,7 +29,7 @@ import javax.inject.Inject;
  * the {@link Repository}.<br/>
  * <br/>
  *
- * {@link #register(String, Map)}, {@link Subject#register(String)}
+ * {@link #register(String, SubjectConfig)}, {@link Subject#register(String)}
  * and {@link Subject#registerIfLatest(String, SchemaEntry)} throw
  * {@link IllegalStateException} if called.
  */
@@ -62,5 +63,15 @@ public class ReadOnlyRepository implements Repository {
       subjects.add(Subject.readOnly(sub));
     }
     return subjects;
+  }
+
+  /**
+   * Closes the inner repository that was passed in at construction time.
+   *
+   * @throws java.io.IOException if an I/O error occurs
+   */
+  @Override
+  public void close() throws IOException {
+    repo.close();
   }
 }

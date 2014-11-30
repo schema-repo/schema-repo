@@ -89,6 +89,13 @@ The schema repo's REST server implementation uses Jetty. The defaults below will
 
 The REST endpoints supported by the Schema Repo, their descriptions, as well as example command executions and reponses are documented on the [Service Endpoints wiki page](https://github.com/schema-repo/schema-repo/wiki/Service-Endpoints).
 
+## Reading List
+
+Here are some interesting resources to get a better understanding of the Schema Repo's motivation and related technologies:
+* [High Volume Data and Schema Evolution](https://prezi.com/dynn9skazbty/high-volume-data-and-schema-evolution/), by Scott Carey.
+* [Schema evolution in Avro, Protocol Buffers and Thrift](http://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html), by Martin Klepman.
+* The original [AVRO-1124](https://issues.apache.org/jira/browse/AVRO-1124) ticket, by Jay Kreps.
+
 ## Origin Story
 
 The schema repo is a standalone version of the patch submitted on the Apache [AVRO-1124](https://issues.apache.org/jira/browse/AVRO-1124) ticket.

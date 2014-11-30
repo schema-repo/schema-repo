@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 public class TestLocalFileSystemRepository extends AbstractTestPersistentRepository<LocalFileSystemRepository> {
   private static final String TEST_PATH = "target/test/TestLocalFileSystemRepository-paths/";
@@ -38,8 +39,14 @@ public class TestLocalFileSystemRepository extends AbstractTestPersistentReposit
   }
 
   @After
-  public void cleanUp() throws IOException {
+  public void cleanUp() throws Exception {
+    LoggerFactory.getLogger(getClass()).debug("Closing");
     getRepo().close();
+    // see https://github.com/schema-repo/schema-repo/issues/12
+    if (System.getProperty("os.name", "").toLowerCase().contains("windows")) {
+      System.gc();
+      Thread.sleep(100);
+    }
     // Clean up the repo's content
     rmDir(new File(REPO_PATH));
   }

@@ -32,6 +32,8 @@ import org.junit.BeforeClass;
 import org.schemarepo.AbstractTestPersistentRepository;
 import org.schemarepo.ValidatorFactory;
 import org.schemarepo.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestZooKeeperRepository extends AbstractTestPersistentRepository<ZooKeeperRepository> {
   private static final String REPO_PATH = "/schema-repo-tests/" + new Date().toString().replace(' ', '_');
@@ -39,6 +41,7 @@ public class TestZooKeeperRepository extends AbstractTestPersistentRepository<Zo
   private static TestingCluster testingCluster;
   private static String testingClusterConnectionString;
   private static CuratorFramework zkClient;
+  private static final Logger logger = LoggerFactory.getLogger(TestZooKeeperRepository.class);
 
   @BeforeClass
   public static void setup() {
@@ -66,14 +69,12 @@ public class TestZooKeeperRepository extends AbstractTestPersistentRepository<Zo
       try {
         zkClient.blockUntilConnected();
       } catch (Exception e) {
-        System.err.println("There was an unrecoverable exception during the ZooKeeper session establishment. Aborting.");
-        e.printStackTrace();
+        logger.error("There was an unrecoverable exception during the ZooKeeper session establishment. Aborting.", e);
         throw new RuntimeException(e);
       }
 
       } catch (Exception e) {
-      System.err.println("An exception occurred while trying to start the ZK test cluster!");
-      e.printStackTrace();
+      logger.error("An exception occurred while trying to start the ZK test cluster!", e);
       throw new RuntimeException(e);
     }
   }
@@ -83,8 +84,7 @@ public class TestZooKeeperRepository extends AbstractTestPersistentRepository<Zo
     try {
       zkClient.delete().deletingChildrenIfNeeded().forPath(REPO_PATH);
     } catch (Exception e) {
-      System.err.println("An exception occurred while trying to clean up the ZK test cluster!");
-      e.printStackTrace();
+      logger.error("An exception occurred while trying to clean up the ZK test cluster!", e);
       throw new RuntimeException(e);
     }
     repo.close();

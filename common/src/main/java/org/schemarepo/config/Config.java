@@ -18,9 +18,9 @@
 
 package org.schemarepo.config;
 
-import org.schemarepo.InMemoryCache;
-
 import java.util.Properties;
+
+import org.schemarepo.InMemoryCache;
 
 /**
  * Class containing the configuration keys and default values.

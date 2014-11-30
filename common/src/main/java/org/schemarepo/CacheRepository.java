@@ -18,8 +18,12 @@
 
 package org.schemarepo;
 
-import javax.inject.Inject;
 import java.io.IOException;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CacheRepository is a {@link Repository} implementation that wraps another
@@ -39,6 +43,8 @@ import java.io.IOException;
  *
  */
 public class CacheRepository implements Repository {
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Repository repo;
   private final RepositoryCache cache;
@@ -60,7 +66,7 @@ public class CacheRepository implements Repository {
   public CacheRepository(Repository repo, RepositoryCache cache) {
     this.repo = repo;
     this.cache = cache;
-    System.out.println("Constructed " + this.toString());
+    logger.info("Constructed {}", this);
   }
 
   @Override
@@ -100,7 +106,7 @@ public class CacheRepository implements Repository {
   @Override
   public void close() throws IOException {
     repo.close();
-    System.out.println("Closed " + this.toString());
+    logger.info("Closed {}", this);
   }
 
   public String toString() {

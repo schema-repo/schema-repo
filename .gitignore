@@ -2,18 +2,21 @@
 *.class
 target/
 
+# Log output
+logs
+
 # Package Files #
 *.jar
 *.war
 *.ear
 
-#Intellij IDE
+# IntelliJ IDE
 *.ipr
 *.iml
 *.iws
 .idea/
 
-#Eclipse IDE
+# Eclipse IDE
 .project
 .settings/
 .classpath

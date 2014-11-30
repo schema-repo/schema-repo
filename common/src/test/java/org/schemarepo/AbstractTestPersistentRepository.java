@@ -1,9 +1,9 @@
 package org.schemarepo;
 
+import java.io.IOException;
+
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.IOException;
 
 /**
  * This extension of {@link AbstractTestRepository} includes tests that close

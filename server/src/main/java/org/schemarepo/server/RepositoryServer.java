@@ -33,6 +33,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.schemarepo.Repository;
+import org.schemarepo.config.Config;
+import org.schemarepo.config.ConfigModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -40,11 +48,6 @@ import com.google.inject.Provides;
 import com.google.inject.servlet.GuiceFilter;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.schemarepo.Repository;
-import org.schemarepo.config.Config;
-import org.schemarepo.config.ConfigModule;
 
 /**
  * A {@link RepositoryServer} is a stand-alone server for running a
@@ -71,6 +74,8 @@ public class RepositoryServer {
    *
    */
   public RepositoryServer(Properties props) {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
     this.injector = Guice.createInjector(
         new ConfigModule(props),
         new ServerModule());
@@ -124,6 +129,7 @@ public class RepositoryServer {
    * via the Config.JETTY_STOP_AT_SHUTDOWN property.
    */
   private static class ShutDownListener extends AbstractLifeCycle.AbstractLifeCycleListener {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Repository repo;
     private final Integer gracefulShutdown;
     ShutDownListener(Repository repo,
@@ -134,17 +140,16 @@ public class RepositoryServer {
 
     @Override
     public void lifeCycleStopping(LifeCycle event) {
-      System.out.println("Going to wait " + gracefulShutdown + " ms to drain requests" +
-              ", then close the repo and exit.");
+      logger.info("Going to wait {} ms to drain requests, then close the repo and exit.", gracefulShutdown);
     }
 
     @Override
     public void lifeCycleStopped(LifeCycle event) {
-      System.out.println("Closing the repo.");
+      logger.info("Closing the repo.");
       try {
         repo.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.warn("Failed to properly close repo", e);
       }
     }
   }

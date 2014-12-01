@@ -20,22 +20,22 @@ package org.schemarepo;
 
 /**
  * A Validator may be bound to each {@link Subject} in a {@link Repository}
- * to ensure that schemas added to the {@link Subject} are mutualy compatible.
+ * to ensure that schemas added to the {@link Subject} are mutually compatible.
  * <br/>
  * <br/>
  * There are many useful notions of compatibility, for example:
  * <li>Forwards Compatible: A user of any old schema
  *     is able to read data written with the new schema</li>
- * <li>Backwards Compabible: A user of the most recent schema
+ * <li>Backwards Compatible: A user of the most recent schema
  *     is able to read data written with any older schema</li>
  * <li>Full Compatibility: A user of any schema
  *     is able to read data written in any other schema</li>
  * <li>N+1 Compatibility: Forward compatibility constrained to
- *     only the verison one prior to the current version.
+ *     only the version one prior to the current version.
  *     e.g. a reader with the second most recent schema
  *     is able to read data written with the most recent schema</li>
  * <li>N+1 Compatibility: Backward compatibility constrained to
- *     only the verison one prior to the current version.
+ *     only the version one prior to the current version.
  *     e.g. a reader with the most recent schema
  *     is able to read data written with the second most recent schema</li>
  */

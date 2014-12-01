@@ -23,13 +23,12 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
-public class TestLocalFileSystemRepository extends AbstractTestRepository<LocalFileSystemRepository> {
+public class TestLocalFileSystemRepository extends AbstractTestPersistentRepository<LocalFileSystemRepository> {
   private static final String TEST_PATH = "target/test/TestLocalFileSystemRepository-paths/";
   private static final String REPO_PATH = "target/test/TestLocalFileSystemRepository/";
 
@@ -40,14 +39,20 @@ public class TestLocalFileSystemRepository extends AbstractTestRepository<LocalF
   }
 
   @After
-  public void cleanUp() throws IOException {
+  public void cleanUp() throws Exception {
+    LoggerFactory.getLogger(getClass()).debug("Closing");
     getRepo().close();
+    // see https://github.com/schema-repo/schema-repo/issues/12
+    if (System.getProperty("os.name", "").toLowerCase().contains("windows")) {
+      System.gc();
+      Thread.sleep(100);
+    }
+    // Clean up the repo's content
+    rmDir(new File(REPO_PATH));
   }
 
   @Override
   protected LocalFileSystemRepository createRepository() {
-    // Clean up the repo's content before giving it out
-    rmDir(new File(REPO_PATH));
     return newRepo(REPO_PATH);
   }
 
@@ -77,85 +82,6 @@ public class TestLocalFileSystemRepository extends AbstractTestRepository<LocalF
     newRepo(TEST_PATH + "/tmp/repo").close();
     newRepo(TEST_PATH + "/tmp/repo").close();
   }
-
-  @Test
-  public void testReadWritten() throws SchemaValidationException {
-    String path = TEST_PATH + "/readWrite";
-    LocalFileSystemRepository r = newRepo(path);
-    try {
-      r.register("sub1", null).register("sc1");
-      r.register("sub2", null).register("sc2");
-      r.register("sub2", null).register("sc3");
-    } finally {
-      r.close();
-    }
-    // Calling close() and newRepo() is like bouncing the repo, to ensure its state persists.
-    r = newRepo(path);
-    try {
-      Subject s1 = r.lookup("sub1");
-      Assert.assertNotNull(s1);
-      Subject s2 = r.lookup("sub2");
-      Assert.assertNotNull(s2);
-
-      SchemaEntry e1 = s1.lookupBySchema("sc1");
-      Assert.assertNotNull(e1);
-      Assert.assertEquals("sc1", e1.getSchema());
-
-      SchemaEntry e2 = s2.lookupBySchema("sc2");
-      Assert.assertNotNull(e2);
-      Assert.assertEquals("sc2", e2.getSchema());
-
-      SchemaEntry e3 = s2.lookupBySchema("sc3");
-      Assert.assertNotNull(e3);
-      Assert.assertEquals("sc3", e3.getSchema());
-    } finally {
-      r.close();
-    }
-  }
-
-  @Test
-  public void testReadWrittenMultiLineSchema() throws SchemaValidationException {
-    String path = TEST_PATH + "/readWriteMultiLine";
-
-    String endOfLine = System.getProperty("line.separator");
-
-    String multiLineSchema1 = "first line" + endOfLine + "second line";
-    String multiLineSchema2 = "first line" + endOfLine + "second line" + endOfLine;
-
-    LocalFileSystemRepository r = newRepo(path);
-    try {
-      r.register("sub1", null).register(multiLineSchema1);
-      r.register("sub1", null).register(multiLineSchema2);
-    } finally {
-      r.close();
-    }
-    // Calling close() and newRepo() is like bouncing the repo, to ensure its state persists.
-    r = newRepo(path);
-    try {
-      Subject s1 = r.lookup("sub1");
-      Assert.assertNotNull(s1);
-
-      SchemaEntry schemaEntry1ById = s1.lookupById("0");
-      Assert.assertNotNull(schemaEntry1ById);
-      Assert.assertEquals(multiLineSchema1, schemaEntry1ById.getSchema());
-
-      SchemaEntry schemaEntryBy1Schema = s1.lookupBySchema(multiLineSchema1);
-      Assert.assertNotNull(schemaEntryBy1Schema);
-      Assert.assertEquals(multiLineSchema1, schemaEntryBy1Schema.getSchema());
-
-      SchemaEntry schemaEntry2ById = s1.lookupById("1");
-      Assert.assertNotNull(schemaEntry2ById);
-      Assert.assertEquals(multiLineSchema1, schemaEntry2ById.getSchema());
-
-      SchemaEntry schemaEntry2BySchema = s1.lookupBySchema(multiLineSchema1);
-      Assert.assertNotNull(schemaEntry2BySchema);
-      Assert.assertEquals(multiLineSchema1, schemaEntry2BySchema.getSchema());
-
-    } finally {
-      r.close();
-    }
-  }
-
 
   @Test(expected = RuntimeException.class)
   public void testInvalidDir() throws IOException {

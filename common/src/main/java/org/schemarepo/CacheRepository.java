@@ -18,7 +18,12 @@
 
 package org.schemarepo;
 
+import java.io.IOException;
+
 import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CacheRepository is a {@link Repository} implementation that wraps another
@@ -39,8 +44,17 @@ import javax.inject.Inject;
  */
 public class CacheRepository implements Repository {
 
-  private final RepositoryCache cache;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
+
   private final Repository repo;
+  private final RepositoryCache cache;
+
+  /**
+   * The runtimeID is a simple sanity check to validate that the repo that gets
+   * constructed by the dependency injection framework is the same that gets
+   * closed at the end of the runtime.
+   */
+  private final double runtimeID = Math.random();
 
   /**
    * Create a caching repository that wraps the provided repository using the
@@ -52,6 +66,7 @@ public class CacheRepository implements Repository {
   public CacheRepository(Repository repo, RepositoryCache cache) {
     this.repo = repo;
     this.cache = cache;
+    logger.info("Constructed {}", this);
   }
 
   @Override
@@ -81,5 +96,23 @@ public class CacheRepository implements Repository {
       cache.add(s);
     }
     return subs;
+  }
+
+  /**
+   * Closes the inner repository that was passed in at construction time.
+   *
+   * @throws java.io.IOException if an I/O error occurs
+   */
+  @Override
+  public void close() throws IOException {
+    repo.close();
+    logger.info("Closed {}", this);
+  }
+
+  public String toString() {
+    return "CacheRepository with the following properties:\n" +
+            "\trepo: " + repo.getClass().toString() + "\n" +
+            "\tcache: " + cache.getClass().toString() + "\n" +
+            "\truntimeID: " + runtimeID;
   }
 }

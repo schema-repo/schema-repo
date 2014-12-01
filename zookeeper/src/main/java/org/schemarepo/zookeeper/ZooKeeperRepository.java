@@ -18,26 +18,6 @@
 
 package org.schemarepo.zookeeper;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-import org.apache.curator.retry.RetryNTimes;
-import org.apache.zookeeper.KeeperException;
-
-import org.schemarepo.InMemorySubjectCache;
-import org.schemarepo.Repository;
-import org.schemarepo.RepositoryUtil;
-import org.schemarepo.SchemaEntry;
-import org.schemarepo.SchemaValidationException;
-import org.schemarepo.Subject;
-import org.schemarepo.SubjectConfig;
-import org.schemarepo.ValidatorFactory;
-import org.schemarepo.config.Config;
-
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -50,6 +30,27 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.zookeeper.KeeperException;
+import org.schemarepo.InMemorySubjectCache;
+import org.schemarepo.Repository;
+import org.schemarepo.RepositoryUtil;
+import org.schemarepo.SchemaEntry;
+import org.schemarepo.SchemaValidationException;
+import org.schemarepo.Subject;
+import org.schemarepo.SubjectConfig;
+import org.schemarepo.ValidatorFactory;
+import org.schemarepo.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This {@link org.schemarepo.Repository} implementation stores its state using Zookeeper.
  * <p/>
@@ -61,6 +62,8 @@ import java.util.Set;
  * can share the same Zookeeper ensemble and synchronize their state through it.
  */
 public class ZooKeeperRepository implements Repository, Closeable {
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ValidatorFactory validators;
   private final InMemorySubjectCache localSubjectsCache = new InMemorySubjectCache();
@@ -87,11 +90,11 @@ public class ZooKeeperRepository implements Repository, Closeable {
     this.validators = validators;
 
     if (zkEnsemble == null || zkEnsemble.isEmpty()) {
-      System.out.println("The '" + Config.ZK_ENSEMBLE + "' config is missing. Exiting.");
+      logger.error("The '{}' config is missing. Exiting.", Config.ZK_ENSEMBLE);
       System.exit(1);
     }
 
-    System.out.println("Starting ZookeeperRepository with the following parameters:\n" +
+    logger.info("Starting ZookeeperRepository with the following parameters:\n" +
             Config.ZK_ENSEMBLE + ": " + zkEnsemble + "\n" +
             Config.ZK_PATH_PREFIX + ": " + zkPathPrefix + "\n" +
             Config.ZK_SESSION_TIMEOUT + ": " + zkSessionTimeout + "\n" +
@@ -117,17 +120,15 @@ public class ZooKeeperRepository implements Repository, Closeable {
     try {
       tempCuratorFramework.blockUntilConnected();
       tempCuratorFramework.create().creatingParentsIfNeeded().forPath(zkPathPrefix);
-      System.out.println("The ZK Path Prefix (" + zkPathPrefix + ") was created in ZK.");
+      logger.info("The ZK Path Prefix ({}) was created in ZK.", zkPathPrefix);
     } catch (KeeperException.NodeExistsException e) {
-      System.out.println("The ZK Path Prefix (" + zkPathPrefix + ") was found in ZK.");
+      logger.info("The ZK Path Prefix ({}) was found in ZK.", zkPathPrefix);
     } catch (IllegalArgumentException e) {
-      System.out.println("Got an IllegalArgumentException while attempting to create the " +
-              "ZK Path Prefix (" + zkPathPrefix + "). Exiting.");
-      e.printStackTrace();
+      logger.error("Got an IllegalArgumentException while attempting to create the " +
+              "ZK Path Prefix (" + zkPathPrefix + "). Exiting.", e);
       System.exit(1);
     } catch (Exception e) {
-      System.err.println("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.");
-      e.printStackTrace();
+      logger.error("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.", e);
       System.exit(1);
     }
 
@@ -140,10 +141,9 @@ public class ZooKeeperRepository implements Repository, Closeable {
     try {
       zkClient.blockUntilConnected();
       zkLock = new InterProcessSemaphoreMutex(zkClient, LOCKFILE);
-      System.out.println("ZooKeeperRepository startup finished!");
+      logger.info("ZooKeeperRepository startup finished!");
     } catch (Exception e) {
-      System.err.println("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.");
-      e.printStackTrace();
+      logger.error("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.", e);
       System.exit(1);
     }
   }
@@ -152,8 +152,7 @@ public class ZooKeeperRepository implements Repository, Closeable {
     try {
       zkLock.acquire();
     } catch (Exception e) {
-      System.err.println("An exception occurred while trying to get the ZK lock!");
-      e.printStackTrace();
+      logger.error("An exception occurred while trying to get the ZK lock!", e);
       throw new RuntimeException(e);
     }
   }
@@ -162,8 +161,7 @@ public class ZooKeeperRepository implements Repository, Closeable {
     try {
       zkLock.release();
     } catch (Exception e) {
-      System.err.println("An exception occurred while trying to release the ZK lock!");
-      e.printStackTrace();
+      logger.error("An exception occurred while trying to release the ZK lock!", e);
       throw new RuntimeException(e);
     }
   }
@@ -195,8 +193,7 @@ public class ZooKeeperRepository implements Repository, Closeable {
         // The Subject was already created by another repository instance, we will
         // just fetch it, below, instead of creating a new one.
       } catch (Exception e) {
-        System.err.println("An exception occurred while accessing ZK!");
-        e.printStackTrace();
+        logger.error("An exception occurred while accessing ZK!", e);
         throw new RuntimeException(e);
       } finally {
         releaseLock();
@@ -247,8 +244,7 @@ public class ZooKeeperRepository implements Repository, Closeable {
           subject = fetchAndCache(subjectName);
         }
       } catch (Exception e) {
-        System.err.println("An exception occurred while accessing ZK!");
-        e.printStackTrace();
+        logger.error("An exception occurred while accessing ZK!", e);
         throw new RuntimeException(e);
       }
     }
@@ -274,8 +270,7 @@ public class ZooKeeperRepository implements Repository, Closeable {
          }
        }
     } catch (Exception e) {
-      System.err.println("An exception occurred while accessing ZK!");
-      e.printStackTrace();
+      logger.error("An exception occurred while accessing ZK!", e);
       throw new RuntimeException(e);
     }
 
@@ -295,11 +290,11 @@ public class ZooKeeperRepository implements Repository, Closeable {
     while (true) {
       if (zkLock.isAcquiredInThisProcess()) {
         try {
-          System.out.println("ZooKeeperRepository's close() called while lock is acquired. " +
+          logger.info("ZooKeeperRepository's close() called while lock is acquired. " +
                   "Waiting " + waitTime + " ms before trying again.");
           wait(waitTime);
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          logger.warn("Interrupted while waiting", e);
         }
       } else {
         // TODO: Make sure the race condition between the if condition and the close is harmless...
@@ -411,7 +406,7 @@ public class ZooKeeperRepository implements Repository, Closeable {
             Integer id = Integer.parseInt(line);
             schemaIdList.add(id);
           } catch (NumberFormatException e) {
-            System.err.println("Got an invalid ID (" + line + ") in " + getSchemaIdsFilePath() + " !");
+            logger.error("Got an invalid ID ({}) in {} !", line, getSchemaIdsFilePath(), e);
           }
         }
 

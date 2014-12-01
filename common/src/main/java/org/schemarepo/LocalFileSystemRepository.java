@@ -18,10 +18,7 @@
 
 package org.schemarepo;
 
-import org.schemarepo.config.Config;
-
 import java.io.BufferedWriter;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -46,6 +43,10 @@ import java.util.Scanner;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.schemarepo.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A {@link Repository} that persists content to file. <br/>
  * <br/>
@@ -64,7 +65,9 @@ import javax.inject.Named;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class LocalFileSystemRepository implements Repository, Closeable {
+public class LocalFileSystemRepository implements Repository {
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private static final String LOCKFILE = ".repo.lock";
   private static final String SUBJECT_PROPERTIES = "subject.properties";
@@ -141,15 +144,15 @@ public class LocalFileSystemRepository implements Repository, Closeable {
     try {
       fileLock.release();
     } catch (IOException e) {
-      // nothing to do here -- it was already released
-      // or there are underlying errors we cannot recover from
+      // nothing to do here -- it was already released or there are underlying errors we cannot recover from
+      logger.debug("Failed to release the lock {}", fileLock, e);
     } finally {
       closed = true;
       try {
         lockChannel.close();
       } catch (IOException e) {
-        // nothing to do here -- underlying errors but recovery
-        // not possible here or in client, and already closed
+        // nothing to do here -- underlying errors but recovery not possible here or in client, and already closed
+        logger.debug("Failed to close lockChannel {}", lockChannel, e);
       }
     }
   }
@@ -472,20 +475,11 @@ public class LocalFileSystemRepository implements Repository, Closeable {
       }
     }
 
-    private final String endOfLine = System.getProperty("line.separator");
-
     private String readAllAsString(File file) throws FileNotFoundException {
       // a scanner that will read a whole file
-      Scanner s = new Scanner(file, "UTF-8").useDelimiter(endOfLine);
-      StringBuilder strBuilder = new StringBuilder();
+      Scanner s = new Scanner(file, "UTF-8").useDelimiter("\\A");
       try {
-        while (s.hasNext()) {
-          strBuilder.append(s.nextLine());
-          if (s.hasNext()) {
-            strBuilder.append(endOfLine);
-          }
-        }
-        return strBuilder.toString();
+        return s.next();
       } catch (NoSuchElementException e) {
         throw new RuntimeException(
             "file is empty: " + file.getAbsolutePath(), e);

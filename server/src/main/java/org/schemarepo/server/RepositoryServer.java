@@ -21,6 +21,7 @@ package org.schemarepo.server;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 
 import javax.inject.Named;
@@ -32,6 +33,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.schemarepo.Repository;
+import org.schemarepo.config.Config;
+import org.schemarepo.config.ConfigModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -39,8 +48,6 @@ import com.google.inject.Provides;
 import com.google.inject.servlet.GuiceFilter;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import org.schemarepo.config.Config;
-import org.schemarepo.config.ConfigModule;
 
 /**
  * A {@link RepositoryServer} is a stand-alone server for running a
@@ -51,6 +58,7 @@ import org.schemarepo.config.ConfigModule;
  */
 public class RepositoryServer {
   private final Server server;
+  private final Injector injector;
 
   /**
    * Constructs an instance of this class, overlaying the default properties
@@ -66,7 +74,9 @@ public class RepositoryServer {
    *
    */
   public RepositoryServer(Properties props) {
-    Injector injector = Guice.createInjector(
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
+    this.injector = Guice.createInjector(
         new ConfigModule(props),
         new ServerModule());
     this.server = injector.getInstance(Server.class);
@@ -112,6 +122,38 @@ public class RepositoryServer {
     ConfigModule.printDefaults(System.err);
   }
 
+  /**
+   * Takes care of calling close() on the repo implementation.
+   *
+   * These hooks will not get called if stopAtShutdown is set to false, which can be set
+   * via the Config.JETTY_STOP_AT_SHUTDOWN property.
+   */
+  private static class ShutDownListener extends AbstractLifeCycle.AbstractLifeCycleListener {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Repository repo;
+    private final Integer gracefulShutdown;
+    ShutDownListener(Repository repo,
+                     Integer gracefulShutdown) {
+      this.repo = repo;
+      this.gracefulShutdown = gracefulShutdown;
+    }
+
+    @Override
+    public void lifeCycleStopping(LifeCycle event) {
+      logger.info("Going to wait {} ms to drain requests, then close the repo and exit.", gracefulShutdown);
+    }
+
+    @Override
+    public void lifeCycleStopped(LifeCycle event) {
+      logger.info("Closing the repo.");
+      try {
+        repo.close();
+      } catch (IOException e) {
+        logger.warn("Failed to properly close repo", e);
+      }
+    }
+  }
+
   private static class ServerModule extends JerseyServletModule {
 
     @Override
@@ -129,6 +171,9 @@ public class RepositoryServer {
         @Named(Config.JETTY_PATH) String path,
         @Named(Config.JETTY_HEADER_SIZE) Integer headerSize,
         @Named(Config.JETTY_BUFFER_SIZE) Integer bufferSize,
+        @Named(Config.JETTY_STOP_AT_SHUTDOWN) Boolean stopAtShutdown,
+        @Named(Config.JETTY_GRACEFUL_SHUTDOWN) Integer gracefulShutdown,
+        Repository repo,
         Connector connector,
         GuiceFilter guiceFilter,
         ServletContextHandler handler) {
@@ -148,8 +193,11 @@ public class RepositoryServer {
       handler.addFilter(holder, "/*", null);
       handler.addServlet(NoneServlet.class, "/");
       handler.setContextPath(path);
+      handler.addLifeCycleListener(new ShutDownListener(repo, gracefulShutdown));
       server.setHandler(handler);
       server.dumpStdErr();
+      server.setStopAtShutdown(stopAtShutdown);
+      server.setGracefulShutdown(gracefulShutdown);
       return server;
     }
 

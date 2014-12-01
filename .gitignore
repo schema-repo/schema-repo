@@ -1,0 +1,23 @@
+# Java template
+*.class
+target/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+#Intellij IDE
+*.ipr
+*.iml
+*.iws
+.idea/
+
+#Eclipse IDE
+.project
+.settings/
+.classpath
+
+# Mac
+.DS_Store
+

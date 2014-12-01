@@ -98,8 +98,7 @@ public class RESTRepository {
     if (null == s) {
       throw new NotFoundException();
     }
-    String result = RepositoryUtil.schemasToString(s.allEntries());
-    return result;
+    return RepositoryUtil.schemasToString(s.allEntries());
   }
 
   @GET
@@ -122,7 +121,7 @@ public class RESTRepository {
   }
 
   /**
-   * Create a subejct if it does not already exist.
+   * Create a subject if it does not already exist.
    *
    * @param subject
    *          the name of the subject
@@ -249,7 +248,7 @@ public class RESTRepository {
     } else {
       latest = exists(s.lookupById(latestId));
     }
-    SchemaEntry created = null;
+    SchemaEntry created;
     try {
       created = s.registerIfLatest(schema, latest);
       if (null == created) {

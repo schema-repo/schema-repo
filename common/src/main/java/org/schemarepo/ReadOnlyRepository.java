@@ -28,7 +28,7 @@ import javax.inject.Inject;
  * the {@link Repository}.<br/>
  * <br/>
  *
- * {@link #register(String, Map)}, {@link Subject#register(String)}
+ * {@link #register(String, SubjectConfig)}, {@link Subject#register(String)}
  * and {@link Subject#registerIfLatest(String, SchemaEntry)} throw
  * {@link IllegalStateException} if called.
  */

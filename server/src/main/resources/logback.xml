@@ -2,6 +2,10 @@
 
 <configuration>
 
+  <!-- uncomment if you are embedding schema-repo into an app that makes heavy use of JUL
+       and you desire to route it through SLF4J -->
+  <!--contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/-->
+
   <jmxConfigurator/>
 
   <property name="schema-repo.logging.logdir"    value="logs" />

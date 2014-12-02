@@ -4,8 +4,9 @@ target/
 
 # Log output
 logs
+*.log
 
-# Package Files #
+# Package Files
 *.jar
 *.war
 *.ear

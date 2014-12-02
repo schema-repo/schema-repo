@@ -40,7 +40,6 @@ import org.schemarepo.config.Config;
 import org.schemarepo.config.ConfigModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -74,8 +73,28 @@ public class RepositoryServer {
    *
    */
   public RepositoryServer(Properties props) {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
+    final Logger logger = LoggerFactory.getLogger(getClass());
+    final String julToSlf4jDep = "jul-to-slf4j dependency";
+    final String julPropName = Config.LOGGING_ROUTE_JUL_TO_SLF4J;
+    if (Boolean.parseBoolean(props.getProperty(julPropName, Config.getDefault(julPropName)))) {
+      final String slf4jBridgeHandlerName = "org.slf4j.bridge.SLF4JBridgeHandler";
+      try {
+        final Class slf4jBridgeHandler = Class.forName(slf4jBridgeHandlerName, true,
+            Thread.currentThread().getContextClassLoader());
+        slf4jBridgeHandler.getMethod("removeHandlersForRootLogger").invoke(null);
+        slf4jBridgeHandler.getMethod("install").invoke(null);
+        logger.info("Routing java.util.logging traffic through SLF4J");
+      } catch (Exception e) {
+        logger.error(
+            "Failed to install {}, java.util.logging is unaffected. Perhaps you need to add {}",
+            slf4jBridgeHandlerName, julToSlf4jDep, e);
+      }
+    } else {
+      logger.info(
+          "java.util.logging is NOT routed through SLF4J. Set {} property to true and add {} if you want otherwise",
+          julPropName, julToSlf4jDep);
+    }
+
     this.injector = Guice.createInjector(
         new ConfigModule(props),
         new ServerModule());

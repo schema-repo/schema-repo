@@ -42,6 +42,10 @@ public class Config {
   public static final String JETTY_STOP_AT_SHUTDOWN = JETTY_PREFIX + "stop-at-shutdown";
   public static final String JETTY_GRACEFUL_SHUTDOWN = JETTY_PREFIX + "graceful-shutdown";
 
+  // Logging config
+  public static final String LOGGING_PREFIX = GLOBAL_PREFIX + "logging.";
+  public static final String LOGGING_ROUTE_JUL_TO_SLF4J = LOGGING_PREFIX + "route-jul-to-slf4j";
+
   // Local file system backend configs
   private static final String LOCAL_FILE_SYSTEM_PREFIX = GLOBAL_PREFIX + "local-file-system.";
   public static final String LOCAL_FILE_SYSTEM_PATH = LOCAL_FILE_SYSTEM_PREFIX + "path";
@@ -70,6 +74,9 @@ public class Config {
     DEFAULTS.setProperty(JETTY_BUFFER_SIZE, "16384");
     DEFAULTS.setProperty(JETTY_STOP_AT_SHUTDOWN, "true");
     DEFAULTS.setProperty(JETTY_GRACEFUL_SHUTDOWN, "3000");
+
+    // Logging defaults
+    DEFAULTS.setProperty(LOGGING_ROUTE_JUL_TO_SLF4J, "true");
 
     // Zookeeper backend defaults
     DEFAULTS.setProperty(ZK_ENSEMBLE, "");

@@ -176,6 +176,8 @@
         <groupId>org.slf4j</groupId>
         <artifactId>jul-to-slf4j</artifactId>
         <version>${slf4j.verion}</version>
+        <!-- explicitly include in a project consuming schema-repo if routing JUL through SLF4J is desired -->
+        <optional>true</optional>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>

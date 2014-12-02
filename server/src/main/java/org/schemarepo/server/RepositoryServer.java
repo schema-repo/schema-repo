@@ -151,22 +151,20 @@ public class RepositoryServer {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Repository repo;
     private final Integer gracefulShutdown;
-    ShutDownListener(Repository repo,
-                     Integer gracefulShutdown) {
+    ShutDownListener(Repository repo, Integer gracefulShutdown) {
       this.repo = repo;
       this.gracefulShutdown = gracefulShutdown;
     }
 
     @Override
-    public void lifeCycleStopping(LifeCycle event) {
-      logger.info("Going to wait {} ms to drain requests, then close the repo and exit.", gracefulShutdown);
-    }
-
-    @Override
     public void lifeCycleStopped(LifeCycle event) {
-      logger.info("Closing the repo.");
+      logger.info("Waited {} ms to drain requests before closing the repo and exiting. " +
+              "This wait time can be adjusted with the {} config property.",
+              gracefulShutdown, Config.JETTY_GRACEFUL_SHUTDOWN);
+
       try {
         repo.close();
+        logger.info("Successfully closed the repo.");
       } catch (IOException e) {
         logger.warn("Failed to properly close repo", e);
       }

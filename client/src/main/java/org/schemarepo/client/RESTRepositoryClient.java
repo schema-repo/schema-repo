@@ -18,6 +18,12 @@
 
 package org.schemarepo.client;
 
+import static com.sun.jersey.api.client.ClientResponse.Status.CONFLICT;
+import static com.sun.jersey.api.client.ClientResponse.Status.FORBIDDEN;
+import static com.sun.jersey.api.client.ClientResponse.Status.NOT_FOUND;
+import static java.lang.String.format;
+
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,13 +33,16 @@ import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
-import org.schemarepo.Repository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
+import org.schemarepo.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -43,48 +52,59 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.representation.Form;
 
 /**
- * An Implementation of {@link Repository} that connects to a remote
- * RESTRepository over HTTP.<br/>
+ * An Implementation of {@link org.schemarepo.Repository} that connects to a remote RESTRepository over HTTP.<br/>
  * <br/>
- * Typically, this is used in a client wrapped in a
- * {@link org.schemarepo.CacheRepository} to limit network communication.<br/>
+ * Typically, this is used in a client wrapped in a {@link org.schemarepo.CacheRepository} to limit network communication.<br/>
  * <br/>
- * Alternatively, this implementation can itself be what is used behind a
- * RESTRepository in a RepositoryServer, thus creating a caching proxy.
+ * Alternatively, this implementation can itself be what is used behind a RESTRepository in a RepositoryServer,
+ * thus creating a caching proxy.
+ *
+ * <b>Note:</b>This implementation diverges from the original <a href='https://issues.apache.org/jira/browse/AVRO-1124'>AVRO-1124 issue</a>
+ *
+ * @see org.schemarepo.client.Avro1124RESTRepositoryClient
  */
-public class RESTRepositoryClient implements Repository {
+public class RESTRepositoryClient implements RepositoryClient {
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private WebResource webResource;
+  private boolean returnNoneOnExceptions;
 
   @Inject
-  public RESTRepositoryClient(@Named("schema-repo.url") String url) {
+  public RESTRepositoryClient(@Named(Config.CLIENT_SERVER_URL) String url,
+                              @Named(Config.CLIENT_RETURN_NONE_ON_EXCEPTIONS) boolean returnNoneOnExceptions)
+  {
+    logger.info(format("Pointing to schema-repo server at %s", url));
+    logger.info(format("Remote exceptions from GET requests will be %s",
+        returnNoneOnExceptions ? "swallowed and an 'empty' value returned" : "propagated to the caller"));
     this.webResource = Client.create().resource(url);
+    this.returnNoneOnExceptions = returnNoneOnExceptions;
   }
 
   @Override
   public Subject register(String subject, SubjectConfig config) {
-    String path = subject;
     Form form = new Form();
     for(Map.Entry<String, String> entry : RepositoryUtil.safeConfig(config).asMap().entrySet()) {
       form.putSingle(entry.getKey(), entry.getValue());
     }
 
-    String regSubjectName = webResource.path(path).accept(MediaType.TEXT_PLAIN)
+    String regSubjectName = webResource.path(subject).accept(MediaType.TEXT_PLAIN)
         .type(MediaType.APPLICATION_FORM_URLENCODED).put(String.class, form);
 
-    RESTSubject sub = new RESTSubject(regSubjectName);
-    return sub;
+    return new RESTSubject(regSubjectName);
   }
 
   @Override
   public Subject lookup(String subject) {
     RepositoryUtil.validateSchemaOrSubject(subject);
+    Subject s = null;
     try {//returns ok or exception if not found
       webResource.path(subject).get(String.class);
-      return new RESTSubject(subject);
-    } catch (Exception e) {
-      return null;
+      s = new RESTSubject(subject);
+    } catch (RuntimeException e) {
+      handleException(e, format("Failed to lookup subject %s", subject), true);
     }
+    return s;
   }
 
   @Override
@@ -95,8 +115,8 @@ public class RESTRepositoryClient implements Repository {
       for (String subjName : RepositoryUtil.subjectNamesFromString(subjects)) {
         subjectList.add(new RESTSubject(subjName));
       }
-    } catch (Exception e) {
-      //no op. return empty list anyways
+    } catch (RuntimeException e) {
+      handleException(e, "Failed to list all subjects", false);
     }
     return subjectList;
   }
@@ -118,102 +138,108 @@ public class RESTRepositoryClient implements Repository {
     @Override
     public SubjectConfig getConfig() {
       String path = getName() + "/config" ;
+      SubjectConfig config = null;
       try {
-        String propString = webResource.path(path).accept(MediaType.TEXT_PLAIN)
-            .get(String.class);
+        String propString = webResource.path(path).accept(MediaType.TEXT_PLAIN).get(String.class);
         Properties props = new Properties();
         props.load(new StringReader(propString));
-        return RepositoryUtil.configFromProperties(props);
-      } catch (Exception e) {
-        return null;
+        config = RepositoryUtil.configFromProperties(props);
+      } catch (RuntimeException e) {
+        handleException(e, format("Failed to get config of subject %s", getName()), false);
+      } catch (IOException e) {
+        handleException(e, format("Failed to parse config data of subject %s", getName()), false);
       }
+      return config;
     }
 
     @Override
     public SchemaEntry register(String schema) throws SchemaValidationException {
       RepositoryUtil.validateSchemaOrSubject(schema);
-
       String path = getName() + "/register";
-      return handleRegisterRequest(path, schema);
+      return handleRegisterRequest(path, schema, false);
     }
 
     @Override
-    public SchemaEntry registerIfLatest(String schema, SchemaEntry latest)
-        throws SchemaValidationException {
+    public SchemaEntry registerIfLatest(String schema, SchemaEntry latest) throws SchemaValidationException {
       RepositoryUtil.validateSchemaOrSubject(schema);
       String idStr = (latest == null) ? "" : latest.getId();
-
       String path = getName() + "/register_if_latest/" + idStr;
-      return handleRegisterRequest(path, schema);
+      return handleRegisterRequest(path, schema, true);
     }
 
-    private SchemaEntry handleRegisterRequest(String path, String schema)
-        throws SchemaValidationException {
-      String schemaId;
+    private SchemaEntry handleRegisterRequest(String path, String schema, boolean resourceNotFoundExpected) throws SchemaValidationException {
+      SchemaEntry schemaEntry = null;
       try {
-        schemaId = webResource.path(path).accept(MediaType.TEXT_PLAIN)
+        String schemaId = webResource.path(path).accept(MediaType.TEXT_PLAIN)
             .type(MediaType.TEXT_PLAIN_TYPE).put(String.class, schema);
-        return new SchemaEntry(schemaId, schema);
+        schemaEntry = new SchemaEntry(schemaId, schema);
       } catch (UniformInterfaceException e) {
         ClientResponse cr = e.getResponse();
-        if (ClientResponse.Status.fromStatusCode(cr.getStatus()).equals(
-            ClientResponse.Status.FORBIDDEN)) {
+        if (ClientResponse.Status.fromStatusCode(cr.getStatus()).equals(FORBIDDEN)) {
           throw new SchemaValidationException("Invalid schema: " + schema);
         } else {
           //any other status should return null
-          return null;
+          handleException(e, format("Failed to register new schema for subject %s", getName()), resourceNotFoundExpected);
         }
       } catch (ClientHandlerException e) {
-        return null;
+        handleException(e, format("Failed to register new schema for subject %s", getName()), resourceNotFoundExpected);
       }
+      return schemaEntry;
     }
 
     @Override
     public SchemaEntry lookupBySchema(String schema) {
       RepositoryUtil.validateSchemaOrSubject(schema);
       String path = getName() + "/schema";
+      SchemaEntry schemaEntry = null;
       try {
         String schemaId = webResource.path(path).accept(MediaType.TEXT_PLAIN)
             .type(MediaType.TEXT_PLAIN_TYPE).post(String.class, schema);
-        return new SchemaEntry(schemaId, schema);
-      } catch (UniformInterfaceException e) {
-        return null;
+        schemaEntry = new SchemaEntry(schemaId, schema);
+      } catch (RuntimeException e) {
+        handleException(e, format("Failed to locate schema %s in subject %s", schema, getName()), true);
       }
+      return schemaEntry;
     }
 
     @Override
     public SchemaEntry lookupById(String schemaId) {
       RepositoryUtil.validateSchemaOrSubject(schemaId);
       String path = getName() + "/id/" + schemaId;
+      SchemaEntry schemaEntry = null;
       try {
         String schema = webResource.path(path).get(String.class);
-        return new SchemaEntry(schemaId, schema);
-      } catch (UniformInterfaceException e) {
-        return null;
+        schemaEntry = new SchemaEntry(schemaId, schema);
+      } catch (RuntimeException e) {
+        handleException(e, format("Failed to locate schema with ID %s in subject %s", schemaId, getName()), true);
       }
+      return schemaEntry;
     }
 
     @Override
     public SchemaEntry latest() {
       String path = getName() + "/latest";
-      String entryStr;
+      SchemaEntry schemaEntry = null;
       try {
-        entryStr = webResource.path(path).get(String.class);
-        return new SchemaEntry(entryStr);
-      } catch (UniformInterfaceException e) {
-        return null;
+        String entryStr = webResource.path(path).get(String.class);
+        schemaEntry = new SchemaEntry(entryStr);
+      } catch (RuntimeException e) {
+        handleException(e, format("Failed to locate latest schema in subject %s", getName()), true);
       }
+      return schemaEntry;
     }
 
     @Override
     public Iterable<SchemaEntry> allEntries() {
       String path = getName() + "/all";
+      Iterable<SchemaEntry> entries = Collections.emptyList();
       try {
         String entriesStr = webResource.path(path).get(String.class);
-        return schemaEntriesFromStr(entriesStr);
-      } catch (UniformInterfaceException e) {
-        return Collections.emptyList();
+        entries = schemaEntriesFromStr(entriesStr);
+      } catch (RuntimeException e) {
+        handleException(e, format("Failed to retrieve all schema entries in subject %s", getName()), false);
       }
+      return entries;
     }
 
     private Iterable<SchemaEntry> schemaEntriesFromStr(String entriesStr) {
@@ -222,15 +248,33 @@ public class RESTRepositoryClient implements Repository {
 
     @Override
     public boolean integralKeys() {
+      boolean integral = false;
       try {
         String path = getName() + "/integral";
-        String integral = webResource.path(path).get(String.class);
-        return Boolean.parseBoolean(integral);
-      } catch (UniformInterfaceException e){
-        return false;
+        integral = Boolean.parseBoolean(webResource.path(path).get(String.class));
+      } catch (RuntimeException e) {
+        handleException(e, format("Failed to determine if keys are integral in subject %s", getName()), false);
       }
+      return integral;
     }
 
+  }
+
+
+  private void handleException(Exception ex, String msg, boolean resourceNotFoundExpected) {
+    final ClientResponse.Status status = ex instanceof UniformInterfaceException ?
+        ((UniformInterfaceException)ex).getResponse().getClientResponseStatus() : null;
+    if (status == NOT_FOUND && resourceNotFoundExpected || status == CONFLICT) {
+      logger.debug(msg, ex);
+    } else if (returnNoneOnExceptions) {
+      if (status != null && status.getFamily() == Response.Status.Family.CLIENT_ERROR) {
+        logger.info(msg, ex);
+      } else {
+        logger.error(msg, ex);
+      }
+    } else {
+      throw ex instanceof RuntimeException ? (RuntimeException)ex : new RuntimeException(msg, ex);
+    }
   }
 
 }

@@ -43,7 +43,7 @@ public class Config {
   public static final String JETTY_GRACEFUL_SHUTDOWN = JETTY_PREFIX + "graceful-shutdown";
 
   // Logging config
-  public static final String LOGGING_PREFIX = GLOBAL_PREFIX + "logging.";
+  private static final String LOGGING_PREFIX = GLOBAL_PREFIX + "logging.";
   public static final String LOGGING_ROUTE_JUL_TO_SLF4J = LOGGING_PREFIX + "route-jul-to-slf4j";
 
   // Local file system backend configs
@@ -58,6 +58,11 @@ public class Config {
   public static final String ZK_CONNECTION_TIMEOUT = ZK_PREFIX + "connection-timeout";
   public static final String ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES = ZK_PREFIX + "curator.sleep-time-between-retries";
   public static final String ZK_CURATOR_NUMBER_OF_RETRIES = ZK_PREFIX + "curator.number-of-retries";
+
+  // REST client config
+  private static final String CLIENT_PREFIX = GLOBAL_PREFIX + "repo-client.";
+  public static final String CLIENT_SERVER_URL = CLIENT_PREFIX + "server-url";
+  public static final String CLIENT_RETURN_NONE_ON_EXCEPTIONS = CLIENT_PREFIX + "return-none-on-exceptions";
 
   // Default values for the above
 
@@ -85,6 +90,9 @@ public class Config {
     DEFAULTS.setProperty(ZK_CONNECTION_TIMEOUT, "2000");
     DEFAULTS.setProperty(ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES, "2000");
     DEFAULTS.setProperty(ZK_CURATOR_NUMBER_OF_RETRIES, "10");
+
+    // Client defaults
+    DEFAULTS.setProperty(CLIENT_RETURN_NONE_ON_EXCEPTIONS, "true");
   }
 
   public static String getDefault(String propertyName) {

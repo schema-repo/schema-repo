@@ -22,34 +22,31 @@ import java.util.Properties;
 
 import org.schemarepo.AbstractTestRepository;
 import org.schemarepo.InMemoryRepository;
+import org.schemarepo.config.Config;
 import org.schemarepo.server.RepositoryServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
-public class RESTRepositoryClientTest extends
-    AbstractTestRepository<RESTRepositoryClient> {
+public abstract class AbstractTestRepositoryClient<R extends RepositoryClient> extends AbstractTestRepository<R> {
 
-  static RepositoryServer server;
-  static RESTRepositoryClient client;
-
-  @BeforeClass
-  public static void setUpBeforeClass() throws Exception {
-    Properties props = new Properties();
-    props.put("repo.class", InMemoryRepository.class.getName());
-    props.put("jetty.host", "localhost");
-    props.put("jetty.port", "8123");
-    server = new RepositoryServer(props);
-    server.start();
-  }
+  protected RepositoryServer server;
 
   @Override
-  protected RESTRepositoryClient createRepository() {
-    return new RESTRepositoryClient("http://localhost:8123/schema-repo/");
+  protected R createRepository() throws Exception {
+    Properties props = new Properties();
+    props.put(Config.REPO_CLASS, InMemoryRepository.class.getName());
+    props.put(Config.JETTY_HOST, "localhost");
+    props.put(Config.JETTY_PORT, "8123");
+    props.put(Config.JETTY_GRACEFUL_SHUTDOWN, "100");
+    server = new RepositoryServer(props);
+    server.start();
+    return createClient("http://localhost:8123/schema-repo/");
   }
 
-  @AfterClass
-  public static void tearDownAfterClass() throws Exception {
+  protected abstract R createClient(String repoUrl);
+
+  @Override
+  public void tearDownRepository() throws Exception {
     server.stop();
+    super.tearDownRepository();
   }
 
 }

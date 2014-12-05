@@ -20,6 +20,7 @@ package org.schemarepo.server;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -58,6 +59,7 @@ import com.sun.jersey.api.NotFoundException;
 public class RESTRepository {
 
   private final Repository repo;
+  private final Properties properties;
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -65,12 +67,14 @@ public class RESTRepository {
    * {@link org.schemarepo.CacheRepository} that wraps a non-caching
    * underlying repository.
    *
-   * @param repo
-   *          The {@link Repository} to wrap.
+   * @param repo The {@link Repository} to wrap.
+   * @param properties User-provided properties that were used to configure the underlying repository
+   *                   and {@link org.schemarepo.server.RepositoryServer}
    */
   @Inject
-  public RESTRepository(Repository repo) {
+  public RESTRepository(Repository repo, Properties properties) {
     this.repo = repo;
+    this.properties = properties != null ? properties : new Properties();
   }
 
   /**
@@ -279,6 +283,24 @@ public class RESTRepository {
   @Path("{subject}/integral")
   public String getSubjectIntegralKeys(@PathParam("subject") String subject) {
     return Boolean.toString(getSubject(subject).integralKeys());
+  }
+
+  @GET
+  @Path("/status")
+  public String getStatus() {
+    return "ACTIVE";
+  }
+
+  @GET
+  @Path("/config")
+  public String getConfig() {
+    final StringWriter writer = new StringWriter();
+    try {
+      properties.store(writer, "Generated on " + new Date());
+    } catch (IOException e) {
+      // should never happen
+    }
+    return writer.toString();
   }
 
   private Subject getSubject(String subjectName) {

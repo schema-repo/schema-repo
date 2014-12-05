@@ -98,8 +98,7 @@ public class RESTRepository {
     if (null == s) {
       throw new NotFoundException();
     }
-    String result = RepositoryUtil.schemasToString(s.allEntries());
-    return result;
+    return RepositoryUtil.schemasToString(s.allEntries());
   }
 
   @GET
@@ -249,7 +248,7 @@ public class RESTRepository {
     } else {
       latest = exists(s.lookupById(latestId));
     }
-    SchemaEntry created = null;
+    SchemaEntry created;
     try {
       created = s.registerIfLatest(schema, latest);
       if (null == created) {

@@ -22,7 +22,7 @@ package org.schemarepo;
  * <p>
  * A {@link SchemaEntryCache} is a bi-directional cache from a schema string to
  * a schema id string. In a given {@link Subject} the mapping between a schema
- * and its id is immutalbe and can be cached. Other aspects of {@link Subject}
+ * and its id is immutable and can be cached. Other aspects of {@link Subject}
  * are not safe to cache.
  * </p>
  * <p>
@@ -54,7 +54,7 @@ public interface SchemaEntryCache {
   /**
    * Add the schema entry to this cache.
    *
-   * @param the
+   * @param entry
    *          schema entry to add. If the provided entry is null, returns null;
    *
    * @return the {@link SchemaEntry} that is in the cache after the call
@@ -75,7 +75,7 @@ public interface SchemaEntryCache {
      * Create a {@link SchemaEntryCache} instance for use with
      * {@link Subject#cacheWith(Subject, SchemaEntryCache)}.
      *
-     * May return null to dicable use of a SchemaEntryCache
+     * May return null to disable use of a SchemaEntryCache
      */
     SchemaEntryCache createSchemaEntryCache();
   }

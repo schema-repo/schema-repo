@@ -40,7 +40,6 @@ import org.schemarepo.config.Config;
 import org.schemarepo.config.ConfigModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -74,8 +73,28 @@ public class RepositoryServer {
    *
    */
   public RepositoryServer(Properties props) {
-    SLF4JBridgeHandler.removeHandlersForRootLogger();
-    SLF4JBridgeHandler.install();
+    final Logger logger = LoggerFactory.getLogger(getClass());
+    final String julToSlf4jDep = "jul-to-slf4j dependency";
+    final String julPropName = Config.LOGGING_ROUTE_JUL_TO_SLF4J;
+    if (Boolean.parseBoolean(props.getProperty(julPropName, Config.getDefault(julPropName)))) {
+      final String slf4jBridgeHandlerName = "org.slf4j.bridge.SLF4JBridgeHandler";
+      try {
+        final Class slf4jBridgeHandler = Class.forName(slf4jBridgeHandlerName, true,
+            Thread.currentThread().getContextClassLoader());
+        slf4jBridgeHandler.getMethod("removeHandlersForRootLogger").invoke(null);
+        slf4jBridgeHandler.getMethod("install").invoke(null);
+        logger.info("Routing java.util.logging traffic through SLF4J");
+      } catch (Exception e) {
+        logger.error(
+            "Failed to install {}, java.util.logging is unaffected. Perhaps you need to add {}",
+            slf4jBridgeHandlerName, julToSlf4jDep, e);
+      }
+    } else {
+      logger.info(
+          "java.util.logging is NOT routed through SLF4J. Set {} property to true and add {} if you want otherwise",
+          julPropName, julToSlf4jDep);
+    }
+
     this.injector = Guice.createInjector(
         new ConfigModule(props),
         new ServerModule());
@@ -132,22 +151,20 @@ public class RepositoryServer {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Repository repo;
     private final Integer gracefulShutdown;
-    ShutDownListener(Repository repo,
-                     Integer gracefulShutdown) {
+    ShutDownListener(Repository repo, Integer gracefulShutdown) {
       this.repo = repo;
       this.gracefulShutdown = gracefulShutdown;
     }
 
     @Override
-    public void lifeCycleStopping(LifeCycle event) {
-      logger.info("Going to wait {} ms to drain requests, then close the repo and exit.", gracefulShutdown);
-    }
-
-    @Override
     public void lifeCycleStopped(LifeCycle event) {
-      logger.info("Closing the repo.");
+      logger.info("Waited {} ms to drain requests before closing the repo and exiting. " +
+              "This wait time can be adjusted with the {} config property.",
+              gracefulShutdown, Config.JETTY_GRACEFUL_SHUTDOWN);
+
       try {
         repo.close();
+        logger.info("Successfully closed the repo.");
       } catch (IOException e) {
         logger.warn("Failed to properly close repo", e);
       }

@@ -1,4 +1,26 @@
-*.iml
-.idea
-target
+# Java template
+*.class
+target/
+
+# Log output
 logs
+*.log
+
+# Package Files
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDE
+*.ipr
+*.iml
+*.iws
+.idea/
+
+# Eclipse IDE
+.project
+.settings/
+.classpath
+
+# Mac
+.DS_Store

@@ -60,7 +60,7 @@ public class Config {
   public static final String ZK_CURATOR_NUMBER_OF_RETRIES = ZK_PREFIX + "curator.number-of-retries";
 
   // REST client config
-  private static final String CLIENT_PREFIX = GLOBAL_PREFIX + "repo-client.";
+  private static final String CLIENT_PREFIX = GLOBAL_PREFIX + "rest-client.";
   public static final String CLIENT_SERVER_URL = CLIENT_PREFIX + "server-url";
   public static final String CLIENT_RETURN_NONE_ON_EXCEPTIONS = CLIENT_PREFIX + "return-none-on-exceptions";
 

@@ -65,6 +65,10 @@
       <name>Felix GV</name>
       <organization>LinkedIn</organization>
     </developer>
+    <developer>
+      <name>Ernest Mishkin</name>
+      <organization>Glassdoor</organization>
+    </developer>
     <!-- If anyone else wants to be listed as a developer or contributor, please mention it on the mailing list. -->
   </developers>
 

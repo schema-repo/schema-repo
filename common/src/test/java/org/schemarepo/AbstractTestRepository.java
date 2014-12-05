@@ -39,15 +39,15 @@ public abstract class AbstractTestRepository<R extends Repository> {
 
   protected R repo;
 
-  protected abstract R createRepository();
+  protected abstract R createRepository() throws Exception;
 
   @Before
-  public void setUpRepository() {
+  public void setUpRepository() throws Exception {
     repo = createRepository();
   }
 
   @After
-  public void tearDownRepository() {
+  public void tearDownRepository() throws Exception {
     repo = null;
   }
 
@@ -97,7 +97,7 @@ public abstract class AbstractTestRepository<R extends Repository> {
 
     // ensure that latest is null when a subject is first created
     SchemaEntry noLatest = sub.latest();
-    Assert.assertNull("latest msut be null if it does not exist", noLatest);
+    Assert.assertNull("latest must be null if it does not exist", noLatest);
 
     // ensure that registerIfLatest does not register if provided a latest
     // value when latest is null

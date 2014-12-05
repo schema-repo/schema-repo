@@ -1,7 +1,5 @@
 package org.schemarepo;
 
-import java.io.IOException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -12,7 +10,7 @@ import org.junit.Test;
 public abstract class AbstractTestPersistentRepository<R extends Repository>
         extends AbstractTestRepository<R> {
   @Test
-  public void testWriteCloseRead() throws SchemaValidationException, IOException {
+  public void testWriteCloseRead() throws Exception {
     try {
       repo.register("sub1", null).register("sc1");
       repo.register("sub2", null).register("sc2");
@@ -45,7 +43,7 @@ public abstract class AbstractTestPersistentRepository<R extends Repository>
   }
 
   @Test
-  public void testWriteCloseReadMultiLineSchema() throws SchemaValidationException, IOException {
+  public void testWriteCloseReadMultiLineSchema() throws Exception {
     String endOfLine = System.getProperty("line.separator");
 
     String multiLineSchema1 = "first line" + endOfLine + "second line";

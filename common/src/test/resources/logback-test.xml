@@ -6,9 +6,6 @@
     <encoder>
       <pattern>%d{HH:mm:ss} %-5level [%-40logger{40}] %message%n</pattern>
     </encoder>
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>INFO</level>
-    </filter>
   </appender>
 
   <logger name="org.apache.zookeeper.ClientCnxn" level="INFO" />

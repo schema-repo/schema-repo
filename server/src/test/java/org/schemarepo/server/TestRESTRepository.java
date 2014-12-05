@@ -18,6 +18,10 @@
 
 package org.schemarepo.server;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
+
 import org.schemarepo.InMemoryRepository;
 import org.schemarepo.ValidatorFactory;
 import org.junit.After;
@@ -35,9 +39,10 @@ public class TestRESTRepository {
 
   @Before
   public void setUp() {
-    repo = new RESTRepository(
-            new InMemoryRepository(new ValidatorFactory.Builder().build()),
-            new GsonJsonUtil());
+    Properties properties = new Properties();
+    properties.setProperty("key", "value");
+    repo = new RESTRepository(new InMemoryRepository(new ValidatorFactory.Builder().build()),
+		    new GsonJsonUtil(), properties);
   }
 
   @After
@@ -59,4 +64,12 @@ public class TestRESTRepository {
   public void testCreateNullSubject() {
     Assert.assertEquals(400, repo.createSubject(null, null).getStatus());
   }
+
+  @Test
+  public void testGetConfig() throws IOException {
+    Properties properties = new Properties();
+    properties.load(new StringReader(repo.getConfig()));
+    Assert.assertEquals("value", properties.getProperty("key"));
+  }
+
 }

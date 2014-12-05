@@ -137,6 +137,11 @@ public class RESTRepositoryClient implements RepositoryClient {
     // no-op
   }
 
+  @Override
+  public String getStatus() {
+    return webResource.path("status").get(String.class);
+  }
+
   private class RESTSubject extends Subject {
 
     private RESTSubject(String name) {

@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class LocalFileSystemRepository implements Repository {
+public class LocalFileSystemRepository extends AbstractSubjectCachingValidatingRepository {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -74,12 +74,9 @@ public class LocalFileSystemRepository implements Repository {
   private static final String SCHEMA_IDS = "schema_ids";
   private static final String SCHEMA_POSTFIX = ".schema";
 
-  private final InMemorySubjectCache subjects = new InMemorySubjectCache();
-  private final ValidatorFactory validators;
   private final File rootDir;
   private final FileChannel lockChannel;
   private final FileLock fileLock;
-  private boolean closed = false;
 
   /**
    * Create a LocalFileSystemRepository in the directory path provided. Locks a file
@@ -93,7 +90,7 @@ public class LocalFileSystemRepository implements Repository {
    */
   @Inject
   public LocalFileSystemRepository(@Named(Config.LOCAL_FILE_SYSTEM_PATH) String repoPath, ValidatorFactory validators) {
-    this.validators = validators;
+    super(validators);
     this.rootDir = new File(repoPath);
     if ((!rootDir.exists() && !rootDir.mkdirs()) || !rootDir.isDirectory()) {
       throw new java.lang.RuntimeException(
@@ -130,18 +127,13 @@ public class LocalFileSystemRepository implements Repository {
     }
   }
 
-  private void isValid() {
-    if (closed) {
-      throw new IllegalStateException("LocalFileSystemRepository is closed");
-    }
-  }
-
   @Override
   public synchronized void close() {
     if (closed) {
       return;
     }
     try {
+      super.close();
       fileLock.release();
     } catch (IOException e) {
       // nothing to do here -- it was already released or there are underlying errors we cannot recover from
@@ -158,29 +150,7 @@ public class LocalFileSystemRepository implements Repository {
   }
 
   @Override
-  public synchronized Subject register(String subjectName, SubjectConfig config) {
-    isValid();
-    Subject subject = subjects.lookup(subjectName);
-    if (null == subject) {
-      subject = subjects.add(Subject.validatingSubject(createNewFileSubject(subjectName, config), validators));
-    }
-    return subject;
-  }
-
-  @Override
-  public synchronized Subject lookup(String subjectName) {
-    isValid();
-    return subjects.lookup(subjectName);
-  }
-
-  @Override
-  public synchronized Iterable<Subject> subjects() {
-    isValid();
-    return subjects.values();
-  }
-
-  private FileSubject createNewFileSubject(String subject,
-      SubjectConfig config) {
+  protected FileSubject createSubject(String subject, SubjectConfig config) {
     File subjectDir = new File(rootDir, subject);
     createNewSubjectDir(subjectDir, config);
     return new FileSubject(subjectDir);

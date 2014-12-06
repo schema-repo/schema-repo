@@ -19,6 +19,7 @@
 package org.schemarepo;
 
 import java.io.Closeable;
+import java.util.Properties;
 
 /**
  * A {@link Repository} is a collection of {@link Subject}s. A {@link Subject}
@@ -60,5 +61,22 @@ public interface Repository extends Closeable {
    * List all subjects. Does not return null.
    */
   Iterable<Subject> subjects();
+
+  /**
+   * Returns the status of the repository.
+   * The actual specific of <b>what</b> is included into the response and
+   * <b>how</b> is it represented (e.g. what's the format of the string)
+   * are specific to each repository implementation.
+   * @return String status data
+   */
+  String getStatus();
+
+  /**
+   * Provides access to repository's configuration.
+   * @param includeDefaults when false, only the properties explicitly set by repository's creator
+   *                        are returned; otherwise default values are included for those not explicitly set
+   * @return Properties repository's configuration
+   */
+  Properties getConfiguration(boolean includeDefaults);
 
 }

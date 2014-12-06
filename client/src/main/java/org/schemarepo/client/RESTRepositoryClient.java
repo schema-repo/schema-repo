@@ -35,6 +35,7 @@ import javax.inject.Named;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.schemarepo.BaseRepository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
@@ -63,7 +64,7 @@ import com.sun.jersey.api.representation.Form;
  *
  * @see org.schemarepo.client.Avro1124RESTRepositoryClient
  */
-public class RESTRepositoryClient implements RepositoryClient {
+public class RESTRepositoryClient extends BaseRepository implements RepositoryClient {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -121,18 +122,16 @@ public class RESTRepositoryClient implements RepositoryClient {
     return subjectList;
   }
 
-  /**
-   * This is a no-op for the RESTRepositoryClient
-   */
-  @Override
-  public void close() {
-    // no-op
-  }
-
   @Override
   public String getStatus() {
     return webResource.path("status").get(String.class);
   }
+
+  @Override
+  public Properties getConfiguration(final boolean includeDefaults) {
+    return null;
+  }
+
 
   private class RESTSubject extends Subject {
 

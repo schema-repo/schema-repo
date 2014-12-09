@@ -226,13 +226,33 @@ public class TypedSchemaRepository<
     return id;
   }
 
-//  public ID registerSchemaIfLatest(SUBJECT subjectName,
-//                                   SCHEMA schema,
-//                                   ID latest)
-//          throws SchemaValidationException {
-//    // This is tricky to implement given the Subject class' API for registerIfLatest.
-//    throw new RuntimeException("registerSchemaIfLatest is not implemented yet");
-//  }
+  public ID registerSchemaIfLatest(SUBJECT subjectName,
+                                   SCHEMA newSchema,
+                                   ID latestId,
+                                   SCHEMA latestSchema)
+          throws SchemaValidationException {
+    // TODO: Determine if these are proper semantics for registerSchemaIfLatest....
+    Map<SCHEMA, ID> schemaToIdCache = getSchemaToIdCache(subjectName);
+    ID id = schemaToIdCache.get(newSchema);
+
+    if (id == null) {
+      SchemaEntry latestSchemaEntry = new SchemaEntry(
+              convertId.toString(latestId),
+              convertSchema.toString(latestSchema));
+      Subject subject = repo.lookup(convertSubject.toString(subjectName));
+      if (subject == null) {
+        subject = repo.register(convertSubject.toString(subjectName),
+                defaultSubjectConfigBuilder.build());
+      }
+      SchemaEntry schemaEntry = subject.registerIfLatest(
+              convertSchema.toString(newSchema),
+              latestSchemaEntry);
+      id = convertId.fromString(schemaEntry.getId());
+      schemaToIdCache.put(newSchema, id); // idempotent
+    }
+
+    return id;
+  }
 
   /**
    * This retrieves mutable data, hence it is not cache-able and will always

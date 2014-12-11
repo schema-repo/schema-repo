@@ -129,17 +129,26 @@ public class RESTRepositoryClient implements RepositoryClient {
     return subjectList;
   }
 
-  /**
-   * This is a no-op for the RESTRepositoryClient
-   */
-  @Override
-  public void close() {
-    // no-op
+  public String getStatus() {
+    return webResource.path("status").get(String.class);
+  }
+
+  public Properties getConfiguration(final boolean includeDefaults) {
+    final Properties properties = new Properties();
+    try {
+      final String propsData = webResource.path("config")
+          .queryParam("includeDefaults", String.valueOf(includeDefaults)).get(String.class);
+      properties.load(new StringReader(propsData));
+    } catch (Exception e) {
+      logger.error("Failed to fetch config", e);
+    }
+    return properties;
   }
 
   @Override
-  public String getStatus() {
-    return webResource.path("status").get(String.class);
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put(Config.CLIENT_SERVER_URL, webResource.getURI().toString());
   }
 
   private class RESTSubject extends Subject {

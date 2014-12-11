@@ -34,6 +34,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -42,6 +44,7 @@ import javax.ws.rs.core.Response.Status;
 import com.sun.jersey.api.NotFoundException;
 
 import org.schemarepo.MessageStrings;
+import org.schemarepo.BaseRepository;
 import org.schemarepo.Repository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
@@ -49,6 +52,10 @@ import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.json.JsonUtil;
+import org.schemarepo.config.Config;
+import org.slf4j.LoggerFactory;
+
+import com.sun.jersey.api.NotFoundException;
 
 /**
  * {@link RESTRepository} Is a JSR-311 REST Interface to a {@link Repository}.
@@ -58,6 +65,8 @@ import org.schemarepo.json.JsonUtil;
 @Singleton
 @Path("/")
 public class RESTRepository {
+
+  private final Date startDate = new Date();
 
   private final Repository repo;
   private final JsonUtil jsonUtil;
@@ -77,6 +86,10 @@ public class RESTRepository {
   public RESTRepository(Repository repo, JsonUtil jsonUtil, Properties properties) {
     this.repo = repo;
     this.jsonUtil = jsonUtil;
+    if (repo == null) {
+      throw new IllegalArgumentException("repo is null");
+    }
+    LoggerFactory.getLogger(getClass()).info("Wrapping " + repo);
     this.properties = properties != null ? properties : new Properties();
   }
 
@@ -312,16 +325,33 @@ public class RESTRepository {
 
   @GET
   @Path("/status")
-  public String getStatus() {
-    return "ACTIVE";
+  public Response getStatus() {
+    Status status = Status.OK;
+    String text = "OK";
+    if (repo instanceof BaseRepository) {
+      try {
+        ((BaseRepository)repo).isValid();
+      } catch (IllegalStateException e) {
+        status = Status.SERVICE_UNAVAILABLE;
+        text = e.getMessage();
+      }
+    } else {
+      text = "N/A";
+    }
+    return Response.status(status).entity(text + " : " + repo.getClass()).build();
   }
 
   @GET
   @Path("/config")
-  public String getConfig() {
+  public String getConfiguration(@QueryParam("includeDefaults") boolean includeDefaults) {
+    final Properties copyOfProperties = new Properties();
+    if (includeDefaults) {
+      copyOfProperties.putAll(Config.DEFAULTS);
+    }
+    copyOfProperties.putAll(properties);
     final StringWriter writer = new StringWriter();
     try {
-      properties.store(writer, "Generated on " + new Date());
+      copyOfProperties.store(writer, "Started on " + startDate);
     } catch (IOException e) {
       // should never happen
     }

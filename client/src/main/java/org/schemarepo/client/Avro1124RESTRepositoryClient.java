@@ -102,18 +102,6 @@ public class Avro1124RESTRepositoryClient implements RepositoryClient {
     return subjectList;
   }
 
-  @Override
-  public String getStatus() {
-    return webResource.path("status").get(String.class);
-  }
-
-  /**
-   * This is a no-op for the RESTRepositoryClient
-   */
-  @Override
-  public void close() {
-    // no-op
-  }
 
   private class RESTSubject extends Subject {
 

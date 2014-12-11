@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class LocalFileSystemRepository implements Repository {
+public class LocalFileSystemRepository extends AbstractBackendRepository {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -119,7 +120,7 @@ public class LocalFileSystemRepository implements Repository {
           + rootDir.getAbsolutePath(), e);
     }
     // eagerly load up subjects
-    loadSubjects(rootDir, subjects);
+    loadSubjects(rootDir, subjectCache);
   }
 
   private void loadSubjects(File repoDir, SubjectCache subjects) {
@@ -155,33 +156,16 @@ public class LocalFileSystemRepository implements Repository {
         logger.debug("Failed to close lockChannel {}", lockChannel, e);
       }
     }
-  }
-
-  @Override
-  public synchronized Subject register(String subjectName, SubjectConfig config) {
-    isValid();
-    Subject subject = subjects.lookup(subjectName);
-    if (null == subject) {
-      subject = subjects.add(Subject.validatingSubject(createNewFileSubject(subjectName, config), validators));
+    try {
+      super.close();
+    } catch (IOException e) {
+      // should never happen
     }
-    return subject;
   }
 
   @Override
-  public synchronized Subject lookup(String subjectName) {
-    isValid();
-    return subjects.lookup(subjectName);
-  }
-
-  @Override
-  public synchronized Iterable<Subject> subjects() {
-    isValid();
-    return subjects.values();
-  }
-
-  private FileSubject createNewFileSubject(String subject,
-      SubjectConfig config) {
-    File subjectDir = new File(rootDir, subject);
+  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
+    final File subjectDir = new File(rootDir, subjectName);
     createNewSubjectDir(subjectDir, config);
     return new FileSubject(subjectDir);
   }
@@ -280,6 +264,14 @@ public class LocalFileSystemRepository implements Repository {
           + file.toString());
     }
   }
+
+
+  @Override
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put(Config.LOCAL_FILE_SYSTEM_PATH, rootDir.getAbsolutePath());
+  }
+
 
   private abstract static class WriteOp {
     protected abstract void write(Writer writer) throws IOException;

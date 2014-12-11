@@ -18,7 +18,7 @@
 
 package org.schemarepo;
 
-import java.io.IOException;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -98,21 +98,10 @@ public class CacheRepository implements Repository {
     return subs;
   }
 
-  /**
-   * Closes the inner repository that was passed in at construction time.
-   *
-   * @throws java.io.IOException if an I/O error occurs
-   */
   @Override
-  public void close() throws IOException {
-    repo.close();
-    logger.info("Closed {}", this);
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put("cache", cache.toString());
   }
 
-  public String toString() {
-    return "CacheRepository with the following properties:\n" +
-            "\trepo: " + repo.getClass().toString() + "\n" +
-            "\tcache: " + cache.getClass().toString() + "\n" +
-            "\truntimeID: " + runtimeID;
-  }
 }

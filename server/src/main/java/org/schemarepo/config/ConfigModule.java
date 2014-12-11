@@ -24,6 +24,12 @@ import java.util.Properties;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.schemarepo.CacheRepository;
+import org.schemarepo.Repository;
+import org.schemarepo.RepositoryCache;
+import org.schemarepo.Validator;
+import org.schemarepo.ValidatorFactory;
+
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -104,5 +110,11 @@ public class ConfigModule implements Module {
   JsonUtil provideJsonUtil(Injector injector,
       @Named(Config.JSON_UTIL_IMPLEMENTATION) Class<JsonUtil> jsonUtilClass) {
     return injector.getInstance(jsonUtilClass);
+  }
+
+  Properties properties() {
+    final Properties copyOfProps = new Properties();
+    copyOfProps.putAll(props);
+    return copyOfProps;
   }
 }

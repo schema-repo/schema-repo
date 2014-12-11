@@ -18,6 +18,8 @@
 
 package org.schemarepo;
 
+import java.util.Map;
+
 import javax.inject.Inject;
 
 /**
@@ -82,9 +84,10 @@ public class CacheRepository extends DelegatingRepository {
     return subs;
   }
 
-  public String toString() {
-    return "CacheRepository with the following properties:\n" +
-            "\trepo: " + repo.getClass().toString() + "\n" +
-            "\tcache: " + cache.getClass().toString();
+  @Override
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put("cache", cache.toString());
   }
+
 }

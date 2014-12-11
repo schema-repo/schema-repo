@@ -18,27 +18,42 @@
 
 package org.schemarepo.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
 
-import org.schemarepo.InMemoryRepository;
-import org.schemarepo.ValidatorFactory;
+import javax.ws.rs.core.Response;
+
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.schemarepo.BaseRepository;
+import org.schemarepo.InMemoryRepository;
+import org.schemarepo.ValidatorFactory;
 
 import com.sun.jersey.api.NotFoundException;
 
 public class TestRESTRepository {
+
+  BaseRepository backendRepo;
   RESTRepository repo;
 
   @Before
   public void setUp() {
     Properties properties = new Properties();
     properties.setProperty("key", "value");
-    repo = new RESTRepository(new InMemoryRepository(new ValidatorFactory.Builder().build()), properties);
+    backendRepo = new InMemoryRepository(new ValidatorFactory.Builder().build()) {
+      @Override
+      public void close() throws IOException {
+        closed = true;
+        super.close();
+      }
+    };
+    repo = new RESTRepository(backendRepo, properties);
   }
 
   @After
@@ -58,14 +73,25 @@ public class TestRESTRepository {
 
   @Test
   public void testCreateNullSubject() {
-    Assert.assertEquals(400, repo.createSubject(null, null).getStatus());
+    assertEquals(400, repo.createSubject(null, null).getStatus());
   }
 
   @Test
   public void testGetConfig() throws IOException {
     Properties properties = new Properties();
-    properties.load(new StringReader(repo.getConfig()));
-    Assert.assertEquals("value", properties.getProperty("key"));
+    properties.load(new StringReader(repo.getConfiguration(false)));
+    assertEquals("value", properties.getProperty("key"));
+  }
+
+  @Test
+  public void testGetStatus() throws Exception {
+    Response response = repo.getStatus();
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertTrue(response.getEntity().toString().startsWith("OK"));
+    backendRepo.close();
+    response = repo.getStatus();
+    assertEquals(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
+    assertFalse(response.getEntity().toString().startsWith("OK"));
   }
 
 }

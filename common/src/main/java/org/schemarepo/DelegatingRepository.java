@@ -1,10 +1,28 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied.  See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package org.schemarepo;
 
 import java.io.IOException;
-import java.util.Properties;
+import java.util.Map;
 
 /**
- * Created by ernest.mishkin on 12/5/14.
+ * Base class for all delegating repositories. Implements decorator pattern.
  */
 public abstract class DelegatingRepository extends BaseRepository {
 
@@ -15,12 +33,10 @@ public abstract class DelegatingRepository extends BaseRepository {
       throw new IllegalArgumentException("Delegate repository required");
     }
     this.repo = delegate;
-    logger.info("Constructed {}", this);
-    logger.info("Wrapping {}", repo);
   }
 
   @Override
-  protected void isValid() {
+  public void isValid() {
     if (repo instanceof BaseRepository) {
       ((BaseRepository)repo).isValid();
     }
@@ -42,19 +58,13 @@ public abstract class DelegatingRepository extends BaseRepository {
   }
 
   @Override
-  public String getStatus() {
-    return repo.getStatus();
-  }
-
-  @Override
-  public Properties getConfiguration(boolean includeDefaults) {
-    return repo.getConfiguration(includeDefaults);
-  }
-
-  @Override
   public void close() throws IOException {
     repo.close();
-    super.close();
   }
 
+  @Override
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put("Delegate", repo.toString());
+  }
 }

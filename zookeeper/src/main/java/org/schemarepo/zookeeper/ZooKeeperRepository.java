@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
@@ -35,10 +36,11 @@ import javax.inject.Named;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.KeeperException;
-import org.schemarepo.AbstractSubjectCachingValidatingRepository;
+import org.schemarepo.AbstractBackendRepository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
@@ -57,7 +59,7 @@ import org.schemarepo.config.Config;
  * This Repository is meant to be highly available, meaning that multiple instances
  * can share the same Zookeeper ensemble and synchronize their state through it.
  */
-public class ZooKeeperRepository extends AbstractSubjectCachingValidatingRepository {
+public class ZooKeeperRepository extends AbstractBackendRepository {
 
   // Constants
   private static final String LOCKFILE = ".repo.lock";
@@ -68,7 +70,6 @@ public class ZooKeeperRepository extends AbstractSubjectCachingValidatingReposit
   // Curator implementation details
   CuratorFramework zkClient;
   InterProcessSemaphoreMutex zkLock;
-  // TreeCache // ?
 
   @Inject
   public ZooKeeperRepository(@Named(Config.ZK_ENSEMBLE) String zkEnsemble,
@@ -94,9 +95,7 @@ public class ZooKeeperRepository extends AbstractSubjectCachingValidatingReposit
         Config.ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES + ": " + curatorSleepTimeBetweenRetries + "\n" +
         Config.ZK_CURATOR_NUMBER_OF_RETRIES + ": " + curatorNumberOfRetries);
 
-    RetryPolicy retryPolicy = new RetryNTimes(
-        curatorSleepTimeBetweenRetries,
-        curatorNumberOfRetries);
+    RetryPolicy retryPolicy = new RetryNTimes(curatorSleepTimeBetweenRetries, curatorNumberOfRetries);
     CuratorFrameworkFactory.Builder cffBuilder = CuratorFrameworkFactory.builder()
         .connectString(zkEnsemble)
         .sessionTimeoutMs(zkSessionTimeout)
@@ -104,8 +103,7 @@ public class ZooKeeperRepository extends AbstractSubjectCachingValidatingReposit
         .retryPolicy(retryPolicy)
         .defaultData(new byte[0]);
 
-    // This temporary CuratorFramework is not namespaced and is only used to ensure the
-    // zkPathPrefix is properly initialized
+    // This temporary CuratorFramework is not namespaced and is only used to ensure the zkPathPrefix is properly initialized
     CuratorFramework tempCuratorFramework = cffBuilder.build();
     tempCuratorFramework.start();
 
@@ -116,8 +114,7 @@ public class ZooKeeperRepository extends AbstractSubjectCachingValidatingReposit
     } catch (KeeperException.NodeExistsException e) {
       logger.info("The ZK Path Prefix ({}) was found in ZK.", zkPathPrefix);
     } catch (IllegalArgumentException e) {
-      logger.error("Got an IllegalArgumentException while attempting to create the " +
-          "ZK Path Prefix (" + zkPathPrefix + "). Exiting.", e);
+      logger.error("Got an IllegalArgumentException while attempting to create the ZK Path Prefix (" + zkPathPrefix + "). Exiting.", e);
       System.exit(1);
     } catch (Exception e) {
       logger.error("There was an unrecoverable exception during the ZooKeeperRepository startup. Exiting.", e);
@@ -158,114 +155,73 @@ public class ZooKeeperRepository extends AbstractSubjectCachingValidatingReposit
     }
   }
 
-  /**
-   * Attempts to create a Subject with the given name and config.
-   *
-   * @param subjectName The name of the subject. Must not be null.
-   * @param config      The subject configuration. May be null.
-   * @return The newly created Subject, or an equivalent one if already created.
-   * Does not return null.
-   * @throws NullPointerException if subjectName is null
-   */
-  @Override
-  public Subject register(String subjectName, SubjectConfig config) {
-    // Look for the Subject in the local in-memory cache first
-    Subject subject = subjects.lookup(subjectName);
-    if (null == subject) {
-      // If the Subject is not in the local cache, we acquire the lock to create it
-      acquireLock();
-      try {
-        zkClient.create().forPath(subjectName);
-
-        // N.B.: There is a possibility that the Subject was already created by
-        // another repository instance. If the create operation above didn't throw,
-        // then we need to initialize the Subject.
-        createNewSubject(subjectName, config);
-      } catch (KeeperException.NodeExistsException e) {
-        // The Subject was already created by another repository instance, we will
-        // just fetch it, below, instead of creating a new one.
-      } catch (Exception e) {
-        logger.error("An exception occurred while accessing ZK!", e);
-        throw new RuntimeException(e);
-      } finally {
-        releaseLock();
-      }
-
-      // Fetch Subject from ZK and store it in local cache
-      subject = createAndCacheSubject(subjectName, config);
-    }
-    return subject;
-  }
-
-  @Override
-  protected Subject createSubject(final String subjectName, final SubjectConfig config) {
+  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
     return new ZooKeeperSubject(subjectName);
   }
 
-  private void createNewSubject(String subjectName, SubjectConfig config) throws Exception {
-    // Create schema IDs file
-    zkClient.create().forPath(subjectName + "/" + SCHEMA_IDS);
-
-    // Create properties file
-    Properties props = new Properties();
-    props.putAll(RepositoryUtil.safeConfig(config).asMap());
-    StringWriter sw = new StringWriter();
-    props.store(sw, "Schema Repository Subject Properties");
-    byte[] content = sw.toString().getBytes();
-    zkClient.create().forPath(subjectName + "/" + SUBJECT_PROPERTIES, content);
-  }
-
-  /**
-   * Returns the subject if it exists, null otherwise.
-   *
-   * @param subjectName the subject name
-   * @return The subject if it exists, null otherwise.
-   */
   @Override
-  public Subject lookup(String subjectName) {
-    Subject subject = subjects.lookup(subjectName);
+  protected void registerInternal(final String subjectName, final SubjectConfig config) {
+    // If the Subject is not in the local cache, we acquire the lock to create it
+    acquireLock();
+    try {
+      zkClient.create().forPath(subjectName);
+      // N.B.: There is a possibility that the Subject was already created by
+      // another repository instance. If the create operation above didn't throw,
+      // then we need to initialize the Subject.
 
-    if (subject == null) {
-      // If not in cache, another instance may have created it
-      try {
-        // TODO: Allow this behavior to be disabled once we have async updating
-        // of the cache via ZK Observers... This would protect ZK from getting
-        // hammered too much at the expense of slightly stale data.
-        if (zkClient.checkExists().forPath(subjectName) != null) {
-          subject = createAndCacheSubject(subjectName, null);
-        }
-      } catch (Exception e) {
-        logger.error("An exception occurred while accessing ZK!", e);
-        throw new RuntimeException(e);
-      }
+      // Create schema IDs file
+      zkClient.create().forPath(subjectName + "/" + SCHEMA_IDS);
+      // Create properties file
+      Properties props = new Properties();
+      props.putAll(RepositoryUtil.safeConfig(config).asMap());
+      StringWriter sw = new StringWriter();
+      props.store(sw, "Schema Repository Subject Properties");
+      byte[] content = sw.toString().getBytes();
+      zkClient.create().forPath(subjectName + "/" + SUBJECT_PROPERTIES, content);
+
+    } catch (KeeperException.NodeExistsException e) {
+      // The Subject was already created by another repository instance, we will
+      // just fetch it, below, instead of creating a new one.
+    } catch (Exception e) {
+      logger.error("An exception occurred while accessing ZK!", e);
+      throw new RuntimeException(e);
+    } finally {
+      releaseLock();
     }
-
-    return subject;
   }
 
-  /**
-   * List all subjects. Does not return null.
-   */
   @Override
-  public Iterable<Subject> subjects() {
+  protected boolean checkSubjectExistenceInternal(final String subjectName) {
+    // If not in cache, another instance may have created it
+    try {
+      // TODO: Allow this behavior to be disabled once we have async updating
+      // of the cache via ZK Observers... This would protect ZK from getting
+      // hammered too much at the expense of slightly stale data.
+      return zkClient.checkExists().forPath(subjectName) != null;
+    } catch (Exception e) {
+      logger.error("An exception occurred while accessing ZK!", e);
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  protected Iterable<String> fetchSubjectsInternal() {
     try {
       // TODO: Allow this behavior to be disabled once we have async updating
       // of the cache via ZK Observers... This would protect ZK from getting
       // hammered too much at the expense of slightly stale data.
       Iterable<String> subjectsInZk = zkClient.getChildren().forPath("");
-       for (String subjectInZk : subjectsInZk) {
-         if (!subjectInZk.equals(LOCKFILE)) {
-           if (subjects.lookup(subjectInZk) == null) {
-             createAndCacheSubject(subjectInZk, null);
-           }
-         }
-       }
+      Set<String> filteredSubjects = new HashSet<String>();
+      for (String subjectInZk : subjectsInZk) {
+        if (!subjectInZk.equals(LOCKFILE)) {
+          filteredSubjects.add(subjectInZk);
+        }
+      }
+      return filteredSubjects;
     } catch (Exception e) {
       logger.error("An exception occurred while accessing ZK!", e);
       throw new RuntimeException(e);
     }
-
-    return subjects.values();
   }
 
   /**
@@ -293,7 +249,24 @@ public class ZooKeeperRepository extends AbstractSubjectCachingValidatingReposit
         break;
       }
     }
+    closed = true;
+    super.close();
   }
+
+  @Override
+  public void isValid() {
+    super.isValid();
+    if (zkClient.getState() != CuratorFrameworkState.STARTED) {
+      throw new IllegalStateException("ZK Client is not connected");
+    }
+  }
+
+  @Override
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put(Config.ZK_ENSEMBLE, zkClient.getZookeeperClient().getCurrentConnectionString());
+  }
+
 
   private class ZooKeeperSubject extends Subject {
     //private final SubjectConfig config;

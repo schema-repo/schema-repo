@@ -1,17 +1,34 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied.  See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package org.schemarepo;
 
 import java.io.IOException;
-import java.util.Properties;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Created by ernest.mishkin on 12/5/14.
+ * Base class for all repository implementations.
  */
 public abstract class BaseRepository implements Repository {
-
-  protected static final String ACTIVE_STATUS = "ACTIVE";
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -21,9 +38,9 @@ public abstract class BaseRepository implements Repository {
    * Asserts the repository is in a valid state (for ex. not closed).
    * @throws java.lang.IllegalStateException if the repository is NOT in a valid state
    */
-  protected void isValid() {
+  public void isValid() {
     if (closed) {
-      throw new IllegalStateException("LocalFileSystemRepository is closed");
+      throw new IllegalStateException("Repository is closed");
     }
   }
 
@@ -32,14 +49,24 @@ public abstract class BaseRepository implements Repository {
     logger.info("Closing {}", this);
   }
 
-  @Override
-  public String getStatus() {
-    return ACTIVE_STATUS;
+  /**
+   * Expose certain configuration elements as properties.
+   * This can be used to construct a useful toString() response, for ex.
+   * <p>Remember to call <pre>super</pre> when overriding!</p>
+   * @param properties Properties object to populate
+   */
+  protected void exposeConfiguration(final Map<String, String> properties) {
   }
 
   @Override
-  public Properties getConfiguration(boolean includeDefaults) {
-    return null;
+  public String toString() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>();
+    exposeConfiguration(properties);
+    final StringBuilder builder = new StringBuilder().append(super.toString());
+    for (Map.Entry<String, String> entry : properties.entrySet()) {
+      builder.append("\n\t").append(entry.getKey()).append("\t: ").append(entry.getValue());
+    }
+    return builder.toString();
   }
 
 }

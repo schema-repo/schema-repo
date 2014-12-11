@@ -103,16 +103,6 @@ public class Avro1124RESTRepositoryClient extends BaseRepository implements Repo
     return subjectList;
   }
 
-  @Override
-  public String getStatus() {
-    return webResource.path("status").get(String.class);
-  }
-
-  @Override
-  public Properties getConfiguration(final boolean includeDefaults) {
-    return null;
-  }
-
 
   private class RESTSubject extends Subject {
 

@@ -122,16 +122,27 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
     return subjectList;
   }
 
-  @Override
   public String getStatus() {
     return webResource.path("status").get(String.class);
   }
 
-  @Override
   public Properties getConfiguration(final boolean includeDefaults) {
-    return null;
+    final Properties properties = new Properties();
+    try {
+      final String propsData = webResource.path("config")
+          .queryParam("includeDefaults", String.valueOf(includeDefaults)).get(String.class);
+      properties.load(new StringReader(propsData));
+    } catch (Exception e) {
+      logger.error("Failed to fetch config", e);
+    }
+    return properties;
   }
 
+  @Override
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put(Config.CLIENT_SERVER_URL, webResource.getURI().toString());
+  }
 
   private class RESTSubject extends Subject {
 

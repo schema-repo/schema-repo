@@ -25,7 +25,7 @@ import javax.inject.Inject;
  * A {@link Repository} that stores its data in memory and is not persistent.
  * This is useful primarily for testing.
  */
-public class InMemoryRepository extends AbstractSubjectCachingValidatingRepository {
+public class InMemoryRepository extends AbstractBackendRepository {
 
   @Inject
   public InMemoryRepository(ValidatorFactory validators) {
@@ -33,7 +33,7 @@ public class InMemoryRepository extends AbstractSubjectCachingValidatingReposito
   }
 
   @Override
-  protected Subject createSubject(final String subjectName, final SubjectConfig config) {
+  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
     return new MemSubject(subjectName, config);
   }
 

@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class LocalFileSystemRepository extends AbstractSubjectCachingValidatingRepository {
+public class LocalFileSystemRepository extends AbstractBackendRepository {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -116,7 +117,7 @@ public class LocalFileSystemRepository extends AbstractSubjectCachingValidatingR
           + rootDir.getAbsolutePath(), e);
     }
     // eagerly load up subjects
-    loadSubjects(rootDir, subjects);
+    loadSubjects(rootDir, subjectCache);
   }
 
   private void loadSubjects(File repoDir, SubjectCache subjects) {
@@ -133,7 +134,6 @@ public class LocalFileSystemRepository extends AbstractSubjectCachingValidatingR
       return;
     }
     try {
-      super.close();
       fileLock.release();
     } catch (IOException e) {
       // nothing to do here -- it was already released or there are underlying errors we cannot recover from
@@ -147,11 +147,16 @@ public class LocalFileSystemRepository extends AbstractSubjectCachingValidatingR
         logger.debug("Failed to close lockChannel {}", lockChannel, e);
       }
     }
+    try {
+      super.close();
+    } catch (IOException e) {
+      // should never happen
+    }
   }
 
   @Override
-  protected FileSubject createSubject(String subject, SubjectConfig config) {
-    File subjectDir = new File(rootDir, subject);
+  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
+    final File subjectDir = new File(rootDir, subjectName);
     createNewSubjectDir(subjectDir, config);
     return new FileSubject(subjectDir);
   }
@@ -250,6 +255,14 @@ public class LocalFileSystemRepository extends AbstractSubjectCachingValidatingR
           + file.toString());
     }
   }
+
+
+  @Override
+  protected void exposeConfiguration(final Map<String, String> properties) {
+    super.exposeConfiguration(properties);
+    properties.put(Config.LOCAL_FILE_SYSTEM_PATH, rootDir.getAbsolutePath());
+  }
+
 
   private abstract static class WriteOp {
     protected abstract void write(Writer writer) throws IOException;

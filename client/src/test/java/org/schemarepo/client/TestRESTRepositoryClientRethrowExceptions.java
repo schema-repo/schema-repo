@@ -18,15 +18,17 @@
 
 package org.schemarepo.client;
 
+import org.schemarepo.json.GsonJsonUtil;
+
 /**
  * Tests {@link RESTRepositoryClient} configured to rethrow any unexpected remote exception
  * encountered while talking to the server.
  */
-public class TestRESTRepositoryClientRethrowExceptions extends AbstractTestRepositoryClient<RESTRepositoryClient> {
+public class TestRESTRepositoryClientRethrowExceptions extends AbstractTestRESTRepositoryClient<RESTRepositoryClient> {
 
   @Override
   protected RESTRepositoryClient createClient(String repoUrl) {
-    return new RESTRepositoryClient(repoUrl, false);
+    return new RESTRepositoryClient(repoUrl, new GsonJsonUtil(), false);
   }
 
 }

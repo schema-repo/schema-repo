@@ -19,6 +19,7 @@ import org.schemarepo.Repository;
 import org.schemarepo.RepositoryCache;
 import org.schemarepo.Validator;
 import org.schemarepo.ValidatorFactory;
+import org.schemarepo.json.JsonUtil;
 
 /**
  * A {@link Module} for configuration based on a set of {@link Properties}
@@ -78,5 +79,12 @@ public class ConfigModule implements Module {
       }
     }
     return builder.build();
+  }
+
+  @Provides
+  @Singleton
+  JsonUtil provideJsonUtil(Injector injector,
+      @Named(Config.JSON_UTIL_IMPLEMENTATION) Class<JsonUtil> jsonUtilClass) {
+    return injector.getInstance(jsonUtilClass);
   }
 }

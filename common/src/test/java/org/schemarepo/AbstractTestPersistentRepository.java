@@ -76,7 +76,6 @@ public abstract class AbstractTestPersistentRepository<R extends Repository>
       SchemaEntry schemaEntry2BySchema = s1.lookupBySchema(multiLineSchema2);
       Assert.assertNotNull(schemaEntry2BySchema);
       Assert.assertEquals(multiLineSchema2, schemaEntry2BySchema.getSchema());
-
     } finally {
       repo.close();
     }

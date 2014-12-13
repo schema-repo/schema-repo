@@ -38,14 +38,16 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import com.sun.jersey.api.NotFoundException;
+
+import org.schemarepo.MessageStrings;
 import org.schemarepo.Repository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
-
-import com.sun.jersey.api.NotFoundException;
+import org.schemarepo.json.JsonUtil;
 
 /**
  * {@link RESTRepository} Is a JSR-311 REST Interface to a {@link Repository}.
@@ -58,6 +60,7 @@ import com.sun.jersey.api.NotFoundException;
 public class RESTRepository {
 
   private final Repository repo;
+  private final JsonUtil jsonUtil;
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -69,21 +72,39 @@ public class RESTRepository {
    *          The {@link Repository} to wrap.
    */
   @Inject
-  public RESTRepository(Repository repo) {
+  public RESTRepository(Repository repo, JsonUtil jsonUtil) {
     this.repo = repo;
+    this.jsonUtil = jsonUtil;
   }
 
   /**
+   * No @Path annotation means this services the "/" endpoint.
+   *
    * @return All subjects in the repository, serialized with
    *         {@link RepositoryUtil#subjectsToString(Iterable)}
    */
   @GET
-  public String allSubjects() {
+  @Consumes(MediaType.WILDCARD)
+  public String allSubjectsAsPlainText() {
     return RepositoryUtil.subjectsToString(repo.subjects());
   }
 
+
   /**
-   * Returns all schemas in the given subject, serialized wity
+   * No @Path annotation means this services the "/" endpoint.
+   *
+   * @return All subjects in the repository, serialized with
+   *         {@link JsonUtil#subjectsToJson(Iterable)}
+   */
+  @GET
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public String allSubjectsAsJson() {
+    return jsonUtil.subjectsToJson(repo.subjects());
+  }
+
+  /**
+   * Returns all schemas in the given subject, serialized with
    * {@link RepositoryUtil#schemasToString(Iterable)}
    *
    * @param subject
@@ -93,12 +114,34 @@ public class RESTRepository {
    */
   @GET
   @Path("{subject}/all")
-  public String subjectList(@PathParam("subject") String subject) {
+  @Consumes(MediaType.WILDCARD)
+  public String allSchemaEntriesAsPlainText(@PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
-      throw new NotFoundException();
+      throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
     return RepositoryUtil.schemasToString(s.allEntries());
+  }
+
+  /**
+   * Returns all schemas in the given subject, serialized with
+   * {@link RepositoryUtil#schemasToString(Iterable)}
+   *
+   * @param subject
+   *          The name of the subject
+   * @return all schemas in the subject. Return a 404 Not Found if there is no
+   *         such subject
+   */
+  @GET
+  @Path("{subject}/all")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public String allSchemaEntriesAsJson(@PathParam("subject") String subject) {
+    Subject s = repo.lookup(subject);
+    if (null == s) {
+      throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
+    }
+    return jsonUtil.schemasToJson(s.allEntries());
   }
 
   @GET
@@ -106,7 +149,7 @@ public class RESTRepository {
   public String subjectConfig(@PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
-      throw new NotFoundException();
+      throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
     Properties props = new Properties();
     props.putAll(s.getConfig().asMap());
@@ -284,14 +327,14 @@ public class RESTRepository {
   private Subject getSubject(String subjectName) {
     Subject subject = repo.lookup(subjectName);
     if (null == subject) {
-      throw new NotFoundException();
+      throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
     return subject;
   }
 
   private SchemaEntry exists(SchemaEntry entry) {
     if (null == entry) {
-      throw new NotFoundException();
+      throw new NotFoundException(MessageStrings.SCHEMA_DOES_NOT_EXIST_ERROR);
     }
     return entry;
   }

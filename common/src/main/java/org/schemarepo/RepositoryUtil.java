@@ -89,10 +89,20 @@ public final class RepositoryUtil {
    */
   public static String schemasToString(Iterable<SchemaEntry> allEntries) {
     StringBuilder sb = new StringBuilder();
+    boolean scheamWithNewLine = false;
     for (SchemaEntry s : allEntries) {
+      if (s.getSchema().contains("\n")) {
+        scheamWithNewLine = true;
+      }
       sb.append(s.toString()).append("\n");
     }
-    return sb.toString();
+    if (scheamWithNewLine) {
+      return new StringBuilder()
+              .append(MessageStrings.SCHEMA_WITH_NEWLINE_ERROR)
+              .append(sb).toString();
+    } else {
+      return sb.toString();
+    }
   }
 
   /**

@@ -26,13 +26,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.sun.jersey.api.NotFoundException;
+import org.schemarepo.json.GsonJsonUtil;
 
 public class TestRESTRepository {
   RESTRepository repo;
 
   @Before
   public void setUp() {
-    repo = new RESTRepository(new InMemoryRepository(new ValidatorFactory.Builder().build()));
+    repo = new RESTRepository(
+            new InMemoryRepository(new ValidatorFactory.Builder().build()),
+            new GsonJsonUtil());
   }
 
   @After
@@ -42,7 +45,7 @@ public class TestRESTRepository {
 
   @Test(expected=NotFoundException.class)
   public void testNonExistentSubjectList() throws Exception {
-    repo.subjectList("nothing");
+    repo.allSchemaEntriesAsPlainText("nothing");
   }
 
   @Test(expected=NotFoundException.class)

@@ -21,6 +21,7 @@ package org.schemarepo.config;
 import java.util.Properties;
 
 import org.schemarepo.InMemoryCache;
+import org.schemarepo.json.GsonJsonUtil;
 
 /**
  * Class containing the configuration keys and default values.
@@ -64,6 +65,10 @@ public class Config {
   public static final String CLIENT_SERVER_URL = CLIENT_PREFIX + "server-url";
   public static final String CLIENT_RETURN_NONE_ON_EXCEPTIONS = CLIENT_PREFIX + "return-none-on-exceptions";
 
+  // JSON parser config
+  private static final String JSON_PREFIX = GLOBAL_PREFIX + "json.";
+  public static final String JSON_UTIL_IMPLEMENTATION = JSON_PREFIX + "util-implementation";
+
   // Default values for the above
 
   public static final Properties DEFAULTS = new Properties();
@@ -93,6 +98,9 @@ public class Config {
 
     // Client defaults
     DEFAULTS.setProperty(CLIENT_RETURN_NONE_ON_EXCEPTIONS, "true");
+
+    // JSON defaults
+    DEFAULTS.setProperty(JSON_UTIL_IMPLEMENTATION, GsonJsonUtil.class.getName());
   }
 
   public static String getDefault(String propertyName) {

@@ -186,6 +186,34 @@ public abstract class AbstractTestRepository<R extends Repository> {
   }
 
   @Test
+  public void testAllEntriesMultiLineSchema() throws Exception {
+    String endOfLine = System.getProperty("line.separator");
+
+    String multiLineSchema1 = "first line" + endOfLine + "second line";
+    String multiLineSchema2 = "first line" + endOfLine + "second line" + endOfLine;
+
+    repo.register("sub1", null).register(multiLineSchema1);
+    repo.register("sub1", null).register(multiLineSchema2);
+
+    Subject s1 = repo.lookup("sub1");
+    Assert.assertNotNull(s1);
+
+    Iterable<SchemaEntry> allEntries = s1.allEntries();
+
+    boolean foundSub1 = false, foundSub2 = false;
+    for (SchemaEntry entry: allEntries) {
+      if (entry.getSchema().equals(multiLineSchema1)) {
+        foundSub1 = true;
+      } else if (entry.getSchema().equals(multiLineSchema2)) {
+        foundSub2 = true;
+      }
+    }
+
+    Assert.assertTrue("Check that allEntries() returns proper multi-line schemas",
+            foundSub1 && foundSub2);
+  }
+
+  @Test
   public void testSubjectConfigs() {
     String testKey = "test.key";
     String testVal = "test.val";

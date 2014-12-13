@@ -41,6 +41,7 @@ import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.config.Config;
+import org.schemarepo.json.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,9 +70,11 @@ public class RESTRepositoryClient implements RepositoryClient {
 
   private WebResource webResource;
   private boolean returnNoneOnExceptions;
+  private JsonUtil jsonUtil;
 
   @Inject
   public RESTRepositoryClient(@Named(Config.CLIENT_SERVER_URL) String url,
+                              @Named(Config.JSON_UTIL_IMPLEMENTATION) JsonUtil jsonUtil,
                               @Named(Config.CLIENT_RETURN_NONE_ON_EXCEPTIONS) boolean returnNoneOnExceptions)
   {
     logger.info(format("Pointing to schema-repo server at %s", url));
@@ -79,6 +82,7 @@ public class RESTRepositoryClient implements RepositoryClient {
         returnNoneOnExceptions ? "swallowed and an 'empty' value returned" : "propagated to the caller"));
     this.webResource = Client.create().resource(url);
     this.returnNoneOnExceptions = returnNoneOnExceptions;
+    this.jsonUtil = jsonUtil;
   }
 
   @Override
@@ -111,8 +115,10 @@ public class RESTRepositoryClient implements RepositoryClient {
   public Iterable<Subject> subjects() {
     ArrayList<Subject> subjectList = new ArrayList<Subject>();
     try {
-      String subjects = webResource.get(String.class);
-      for (String subjName : RepositoryUtil.subjectNamesFromString(subjects)) {
+      String subjects = webResource
+              .accept(MediaType.APPLICATION_JSON)
+              .get(String.class);
+      for (String subjName : jsonUtil.subjectNamesFromJson(subjects)) {
         subjectList.add(new RESTSubject(subjName));
       }
     } catch (RuntimeException e) {
@@ -234,16 +240,15 @@ public class RESTRepositoryClient implements RepositoryClient {
       String path = getName() + "/all";
       Iterable<SchemaEntry> entries = Collections.emptyList();
       try {
-        String entriesStr = webResource.path(path).get(String.class);
-        entries = schemaEntriesFromStr(entriesStr);
+        String entriesStr = webResource
+                .path(path)
+                .accept(MediaType.APPLICATION_JSON)
+                .get(String.class);
+        entries = jsonUtil.schemasFromJson(entriesStr);
       } catch (RuntimeException e) {
         handleException(e, format("Failed to retrieve all schema entries in subject %s", getName()), false);
       }
       return entries;
-    }
-
-    private Iterable<SchemaEntry> schemaEntriesFromStr(String entriesStr) {
-      return RepositoryUtil.schemasFromString(entriesStr);
     }
 
     @Override

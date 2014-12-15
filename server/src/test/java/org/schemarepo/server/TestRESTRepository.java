@@ -28,6 +28,8 @@ import org.junit.Test;
 import com.sun.jersey.api.NotFoundException;
 import org.schemarepo.json.GsonJsonUtil;
 
+import javax.ws.rs.core.MediaType;
+
 public class TestRESTRepository {
   RESTRepository repo;
 
@@ -45,7 +47,7 @@ public class TestRESTRepository {
 
   @Test(expected=NotFoundException.class)
   public void testNonExistentSubjectList() throws Exception {
-    repo.allSchemaEntriesAsPlainText("nothing");
+    repo.allSchemaEntries(MediaType.TEXT_PLAIN, "nothing");
   }
 
   @Test(expected=NotFoundException.class)

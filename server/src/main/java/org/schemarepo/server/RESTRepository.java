@@ -28,11 +28,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -55,7 +55,6 @@ import org.schemarepo.json.JsonUtil;
  * Combine with {@link RepositoryServer} to run an embedded REST server.
  */
 @Singleton
-@Produces(MediaType.TEXT_PLAIN)
 @Path("/")
 public class RESTRepository {
 
@@ -84,23 +83,17 @@ public class RESTRepository {
    *         {@link RepositoryUtil#subjectsToString(Iterable)}
    */
   @GET
-  @Consumes(MediaType.WILDCARD)
-  public String allSubjectsAsPlainText() {
-    return RepositoryUtil.subjectsToString(repo.subjects());
-  }
+  public Response allSubjects(@HeaderParam("Accept") String mediaType) {
+    if (mediaType.equals(MediaType.APPLICATION_JSON)) {
+      return Response.ok(
+              jsonUtil.subjectsToJson(repo.subjects()),
+              MediaType.APPLICATION_JSON).build();
+    } else {
+      return Response.ok(
+              RepositoryUtil.subjectsToString(repo.subjects()),
+              MediaType.TEXT_PLAIN).build();
 
-
-  /**
-   * No @Path annotation means this services the "/" endpoint.
-   *
-   * @return All subjects in the repository, serialized with
-   *         {@link JsonUtil#subjectsToJson(Iterable)}
-   */
-  @GET
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public String allSubjectsAsJson() {
-    return jsonUtil.subjectsToJson(repo.subjects());
+    }
   }
 
   /**
@@ -114,34 +107,23 @@ public class RESTRepository {
    */
   @GET
   @Path("{subject}/all")
-  @Consumes(MediaType.WILDCARD)
-  public String allSchemaEntriesAsPlainText(@PathParam("subject") String subject) {
+  public Response allSchemaEntries(
+          @HeaderParam("Accept") String mediaType,
+          @PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
       throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
-    return RepositoryUtil.schemasToString(s.allEntries());
-  }
+    if (mediaType.equals(MediaType.APPLICATION_JSON)) {
+      return Response.ok(
+              jsonUtil.schemasToJson(s.allEntries()),
+              MediaType.APPLICATION_JSON).build();
+    } else {
+      return Response.ok(
+              RepositoryUtil.schemasToString(s.allEntries()),
+              MediaType.TEXT_PLAIN).build();
 
-  /**
-   * Returns all schemas in the given subject, serialized with
-   * {@link RepositoryUtil#schemasToString(Iterable)}
-   *
-   * @param subject
-   *          The name of the subject
-   * @return all schemas in the subject. Return a 404 Not Found if there is no
-   *         such subject
-   */
-  @GET
-  @Path("{subject}/all")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public String allSchemaEntriesAsJson(@PathParam("subject") String subject) {
-    Subject s = repo.lookup(subject);
-    if (null == s) {
-      throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
-    return jsonUtil.schemasToJson(s.allEntries());
   }
 
   @GET

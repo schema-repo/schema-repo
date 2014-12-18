@@ -39,16 +39,12 @@ import java.util.Map;
  * N.B.: Currently, there is no cache eviction mechanism, so this can
  * potentially grow to unbounded sizes.
  */
-public class TypedSchemaRepository<
-        ID,       IdConverter       extends Converter<ID>,
-        SCHEMA,   SchemaConverter   extends Converter<SCHEMA>,
-        SUBJECT,  SubjectConverter  extends Converter<SUBJECT>,
-        REPO extends Repository> {
+public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT> {
 
   private REPO repo;
-  private IdConverter convertId;
-  private SchemaConverter convertSchema;
-  private SubjectConverter convertSubject;
+  private Converter<ID> convertId;
+  private Converter<SCHEMA> convertSchema;
+  private Converter<SUBJECT> convertSubject;
   private SubjectConfig.Builder defaultSubjectConfigBuilder;
 
   // Internal state
@@ -60,9 +56,9 @@ public class TypedSchemaRepository<
 
   public TypedSchemaRepository(
           REPO repo,
-          IdConverter idConverter,
-          SchemaConverter schemaConverter,
-          SubjectConverter subjectConverter,
+          Converter<ID> idConverter,
+          Converter<SCHEMA> schemaConverter,
+          Converter<SUBJECT> subjectConverter,
           SubjectConfig.Builder defaultSubjectConfigBuilder) {
     this.repo = repo;
     this.convertId = idConverter;
@@ -75,9 +71,9 @@ public class TypedSchemaRepository<
 
   public TypedSchemaRepository(
           REPO repo,
-          IdConverter idConverter,
-          SchemaConverter schemaConverter,
-          SubjectConverter subjectConverter) {
+          Converter<ID> idConverter,
+          Converter<SCHEMA> schemaConverter,
+          Converter<SUBJECT> subjectConverter) {
     this(repo, idConverter, schemaConverter, subjectConverter,
             new SubjectConfig.Builder());
   }

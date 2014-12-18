@@ -16,7 +16,7 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client;
+package org.schemarepo.api;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -26,7 +26,7 @@ import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
-import org.schemarepo.client.converter.Converter;
+import org.schemarepo.api.converter.Converter;
 
 import java.util.HashMap;
 import java.util.List;

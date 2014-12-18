@@ -29,7 +29,7 @@
 
   <artifactId>schema-repo-zookeeper</artifactId>
 
-  <name>Schema Repository on ZK</name>
+  <name>Schema Repository ZK Backend</name>
   <url>http://schemarepo.org</url>
   <description>Schema Repository backed and synchronized by a Zookeeper ensemble</description>
 

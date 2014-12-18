@@ -16,31 +16,25 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client.converter;
+package org.schemarepo.api.converter;
 
 /**
- * This converter can be useful for people who wish to constrain the usable
- * subjects to a predetermined set of elements, i.e.: an Enum.
+ * To convert back and forth with Integer.
+ *
+ * As a converter for IDs, this is probably overkill for most use cases, since
+ * it allows billions of schemas per subject. There may be some highly generic
+ * and dynamic system architectures that would warrant such high cardinality,
+ * but for most intents and purposes, one should probably think twice about
+ * using this kind of ID.
  */
-public class EnumConverter<E extends Enum<E>> implements Converter<E> {
-
-  private Class<E> enumClass;
-
-  public EnumConverter(E enumInstance) {
-    this.enumClass = enumInstance.getDeclaringClass();
-  }
-
-  public EnumConverter(Class<E> enumClass) {
-    this.enumClass = enumClass;
+public class IntegerConverter implements Converter<Integer> {
+  @Override
+  public Integer fromString(String literal) {
+    return Integer.parseInt(literal);
   }
 
   @Override
-  public E fromString(String literal) {
-    return Enum.valueOf(enumClass, literal);
-  }
-
-  @Override
-  public String toString(E strongType) {
-    return strongType.name();
+  public String toString(Integer strongType) {
+    return strongType.toString();
   }
 }

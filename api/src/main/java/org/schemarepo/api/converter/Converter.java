@@ -16,19 +16,26 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client.converter;
+package org.schemarepo.api.converter;
 
 /**
- * For the entities you wish to use directly as Strings, without any conversion.
+ * An interface which the TypedSchemaRepository uses to convert IDs, schema
+ * literals and subject names back and forth with Strings.
  */
-public class IdentityConverter implements Converter<String> {
-  @Override
-  public String fromString(String literal) {
-    return literal;
-  }
+public interface Converter<TYPE> {
+  /**
+   * Given a String literal, provide a strongly-typed instance.
+   *
+   * @param literal to be converted
+   * @return the requested TYPE
+   */
+  TYPE fromString(String literal);
 
-  @Override
-  public String toString(String strongType) {
-    return strongType;
-  }
+  /**
+   * Given a strongly-typed instance, provide its String literal representation.
+   *
+   * @param strongType instance to be converted
+   * @return the String literal representation
+   */
+  String toString(TYPE strongType);
 }

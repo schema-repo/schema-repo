@@ -27,11 +27,11 @@
     <relativePath>../</relativePath>
   </parent>
 
-  <artifactId>schema-repo-client</artifactId>
+  <artifactId>schema-repo-api</artifactId>
 
-  <name>Schema Repository REST Client</name>
+  <name>Schema Repository API</name>
   <url>http://schemarepo.org</url>
-  <description>Schema Repository REST Client</description>
+  <description>Schema Repository Strongly-Typed API</description>
 
   <build>
   </build>
@@ -46,27 +46,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.inject</groupId>
-      <artifactId>javax.inject</artifactId>
-      <version>1</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.schemarepo</groupId>
-      <artifactId>schema-repo-common</artifactId>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.schemarepo</groupId>
-      <artifactId>schema-repo-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
   </dependencies>
 

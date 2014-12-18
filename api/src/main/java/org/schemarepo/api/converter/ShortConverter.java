@@ -16,26 +16,23 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client.converter;
+package org.schemarepo.api.converter;
 
 /**
- * An interface which the TypedSchemaRepository uses to convert IDs, schema
- * literals and subject names back and forth with Strings.
+ * To convert back and forth with Short.
+ *
+ * For most people this can be a reasonable choice for IDs. If anyone needs to
+ * store more than 65K schemas for a single subject, they should probably take
+ * a long hard look at how they're using the schema repo.
  */
-public interface Converter<TYPE> {
-  /**
-   * Given a String literal, provide a strongly-typed instance.
-   *
-   * @param literal to be converted
-   * @return the requested TYPE
-   */
-  TYPE fromString(String literal);
+public class ShortConverter implements Converter<Short> {
+  @Override
+  public Short fromString(String literal) {
+    return Short.parseShort(literal);
+  }
 
-  /**
-   * Given a strongly-typed instance, provide its String literal representation.
-   *
-   * @param strongType instance to be converted
-   * @return the String literal representation
-   */
-  String toString(TYPE strongType);
+  @Override
+  public String toString(Short strongType) {
+    return strongType.toString();
+  }
 }

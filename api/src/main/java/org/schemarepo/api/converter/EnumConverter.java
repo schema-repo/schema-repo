@@ -16,23 +16,31 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client.converter;
+package org.schemarepo.api.converter;
 
 /**
- * To convert back and forth with Short.
- *
- * For most people this can be a reasonable choice for IDs. If anyone needs to
- * store more than 65K schemas for a single subject, they should probably take
- * a long hard look at how they're using the schema repo.
+ * This converter can be useful for people who wish to constrain the usable
+ * subjects to a predetermined set of elements, i.e.: an Enum.
  */
-public class ShortConverter implements Converter<Short> {
-  @Override
-  public Short fromString(String literal) {
-    return Short.parseShort(literal);
+public class EnumConverter<E extends Enum<E>> implements Converter<E> {
+
+  private Class<E> enumClass;
+
+  public EnumConverter(E enumInstance) {
+    this.enumClass = enumInstance.getDeclaringClass();
+  }
+
+  public EnumConverter(Class<E> enumClass) {
+    this.enumClass = enumClass;
   }
 
   @Override
-  public String toString(Short strongType) {
-    return strongType.toString();
+  public E fromString(String literal) {
+    return Enum.valueOf(enumClass, literal);
+  }
+
+  @Override
+  public String toString(E strongType) {
+    return strongType.name();
   }
 }

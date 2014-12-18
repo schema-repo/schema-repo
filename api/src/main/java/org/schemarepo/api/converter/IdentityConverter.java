@@ -16,24 +16,19 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client.converter;
+package org.schemarepo.api.converter;
 
 /**
- * To convert back and forth with Byte.
- *
- * For most people this can be a reasonable choice for IDs. Most use cases
- * should require less than 256 schemas per subject. However, if one wants to be
- * extra paranoid about future extensibility, the ShortConverter should provide
- * as much mileage as one might need.
+ * For the entities you wish to use directly as Strings, without any conversion.
  */
-public class ByteConverter implements Converter<Byte> {
+public class IdentityConverter implements Converter<String> {
   @Override
-  public Byte fromString(String literal) {
-    return Byte.parseByte(literal);
+  public String fromString(String literal) {
+    return literal;
   }
 
   @Override
-  public String toString(Byte strongType) {
-    return strongType.toString();
+  public String toString(String strongType) {
+    return strongType;
   }
 }

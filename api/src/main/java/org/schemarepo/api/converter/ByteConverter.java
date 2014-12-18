@@ -16,25 +16,24 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo.client.converter;
+package org.schemarepo.api.converter;
 
 /**
- * To convert back and forth with Integer.
+ * To convert back and forth with Byte.
  *
- * As a converter for IDs, this is probably overkill for most use cases, since
- * it allows billions of schemas per subject. There may be some highly generic
- * and dynamic system architectures that would warrant such high cardinality,
- * but for most intents and purposes, one should probably think twice about
- * using this kind of ID.
+ * For most people this can be a reasonable choice for IDs. Most use cases
+ * should require less than 256 schemas per subject. However, if one wants to be
+ * extra paranoid about future extensibility, the ShortConverter should provide
+ * as much mileage as one might need.
  */
-public class IntegerConverter implements Converter<Integer> {
+public class ByteConverter implements Converter<Byte> {
   @Override
-  public Integer fromString(String literal) {
-    return Integer.parseInt(literal);
+  public Byte fromString(String literal) {
+    return Byte.parseByte(literal);
   }
 
   @Override
-  public String toString(Integer strongType) {
+  public String toString(Byte strongType) {
     return strongType.toString();
   }
 }

@@ -29,7 +29,7 @@
 
   <artifactId>schema-repo-zk-bundle</artifactId>
 
-  <name>Schema Repository on ZK Bundle</name>
+  <name>Schema Repository ZK Backend Bundle</name>
   <url>http://schemarepo.org</url>
   <description>Schema Repository standalone ZK bundle</description>
 

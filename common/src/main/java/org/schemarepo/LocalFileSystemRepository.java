@@ -156,13 +156,12 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
 
   @Override
   protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
-    final File subjectDir = new File(rootDir, subjectName);
-    createNewSubjectDir(subjectDir, config);
-    return new FileSubject(subjectDir);
+    return new FileSubject(new File(rootDir, subjectName));
   }
 
-  // create a new empty subject directory
-  private static void createNewSubjectDir(File subjectDir, SubjectConfig config) {
+  @Override
+  protected void registerInternal(final String subjectName, final SubjectConfig config) {
+    final File subjectDir = new File(rootDir, subjectName);
     if (subjectDir.exists()) {
       throw new RuntimeException(
           "Cannot create a FileSubject, directory already exists: "
@@ -179,7 +178,6 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
     Properties props = new Properties();
     props.putAll(RepositoryUtil.safeConfig(config).asMap());
     writePropertyFile(subjectProperties, props);
-
   }
 
   private static File createNewFileInDir(File dir, String filename) {

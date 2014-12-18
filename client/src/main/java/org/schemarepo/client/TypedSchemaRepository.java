@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied.  See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package org.schemarepo.client;
 
 import com.google.common.collect.BiMap;
@@ -226,33 +244,34 @@ public class TypedSchemaRepository<
     return id;
   }
 
-  public ID registerSchemaIfLatest(SUBJECT subjectName,
-                                   SCHEMA newSchema,
-                                   ID latestId,
-                                   SCHEMA latestSchema)
-          throws SchemaValidationException {
-    // TODO: Determine if these are proper semantics for registerSchemaIfLatest....
-    Map<SCHEMA, ID> schemaToIdCache = getSchemaToIdCache(subjectName);
-    ID id = schemaToIdCache.get(newSchema);
-
-    if (id == null) {
-      SchemaEntry latestSchemaEntry = new SchemaEntry(
-              convertId.toString(latestId),
-              convertSchema.toString(latestSchema));
-      Subject subject = repo.lookup(convertSubject.toString(subjectName));
-      if (subject == null) {
-        subject = repo.register(convertSubject.toString(subjectName),
-                defaultSubjectConfigBuilder.build());
-      }
-      SchemaEntry schemaEntry = subject.registerIfLatest(
-              convertSchema.toString(newSchema),
-              latestSchemaEntry);
-      id = convertId.fromString(schemaEntry.getId());
-      schemaToIdCache.put(newSchema, id); // idempotent
-    }
-
-    return id;
-  }
+//  N.B.: I'd rather not support registerIfLatest in the typed client for now...
+//  public ID registerSchemaIfLatest(SUBJECT subjectName,
+//                                   SCHEMA newSchema,
+//                                   ID latestId,
+//                                   SCHEMA latestSchema)
+//          throws SchemaValidationException {
+//    // TODO: Determine if these are proper semantics for registerSchemaIfLatest....
+//    Map<SCHEMA, ID> schemaToIdCache = getSchemaToIdCache(subjectName);
+//    ID id = schemaToIdCache.get(newSchema);
+//
+//    if (id == null) {
+//      SchemaEntry latestSchemaEntry = new SchemaEntry(
+//              convertId.toString(latestId),
+//              convertSchema.toString(latestSchema));
+//      Subject subject = repo.lookup(convertSubject.toString(subjectName));
+//      if (subject == null) {
+//        subject = repo.register(convertSubject.toString(subjectName),
+//                defaultSubjectConfigBuilder.build());
+//      }
+//      SchemaEntry schemaEntry = subject.registerIfLatest(
+//              convertSchema.toString(newSchema),
+//              latestSchemaEntry);
+//      id = convertId.fromString(schemaEntry.getId());
+//      schemaToIdCache.put(newSchema, id); // idempotent
+//    }
+//
+//    return id;
+//  }
 
   /**
    * This retrieves mutable data, hence it is not cache-able and will always

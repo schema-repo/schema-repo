@@ -78,7 +78,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     isValid();
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
-      if (checkSubjectExistenceInternal(subjectName)) {
+      if (checkSubjectExistsInternal(subjectName)) {
         subject = createAndCacheSubject(subjectName, null);
       }
     }
@@ -91,7 +91,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
    * @param subjectName subject name
    * @return boolean
    */
-  protected boolean checkSubjectExistenceInternal(final String subjectName) {
+  protected boolean checkSubjectExistsInternal(final String subjectName) {
     return false;
   }
 

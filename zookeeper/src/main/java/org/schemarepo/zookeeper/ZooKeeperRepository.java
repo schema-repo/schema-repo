@@ -191,7 +191,7 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected boolean checkSubjectExistenceInternal(final String subjectName) {
+  protected boolean checkSubjectExistsInternal(final String subjectName) {
     // If not in cache, another instance may have created it
     try {
       // TODO: Allow this behavior to be disabled once we have async updating

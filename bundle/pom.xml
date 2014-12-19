@@ -23,7 +23,7 @@
   <parent>
     <artifactId>schema-repo-parent</artifactId>
     <groupId>org.schemarepo</groupId>
-    <version>0.1.2</version>
+    <version>0.1.3-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 

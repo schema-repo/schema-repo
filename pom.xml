@@ -90,8 +90,8 @@
     <guice.version>3.0</guice.version>
     <junit.version>4.11</junit.version>
     <curator.version>2.6.0</curator.version>
-    <slf4j.verion>1.7.7</slf4j.verion>
-    <logback.verion>1.1.2</logback.verion>
+    <slf4j.version>1.7.7</slf4j.version>
+    <logback.version>1.1.2</logback.version>
     <gson.version>2.3.1</gson.version>
 
     <!-- version properties for plugins -->
@@ -164,19 +164,19 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.verion}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jul-to-slf4j</artifactId>
-        <version>${slf4j.verion}</version>
+        <version>${slf4j.version}</version>
         <!-- explicitly include in a project consuming schema-repo if routing JUL through SLF4J is desired -->
         <optional>true</optional>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>${logback.verion}</version>
+        <version>${logback.version}</version>
         <scope>runtime</scope>
       </dependency>
       <dependency>

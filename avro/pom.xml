@@ -42,7 +42,7 @@
   <dependencies>
     <dependency>
       <groupId>org.schemarepo</groupId>
-      <artifactId>schema-repo-api</artifactId>
+      <artifactId>schema-repo-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

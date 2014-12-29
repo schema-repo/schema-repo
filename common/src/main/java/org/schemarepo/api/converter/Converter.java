@@ -16,20 +16,26 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo;
+package org.schemarepo.api.converter;
 
 /**
- * Static Strings used to communicate a message to the end-user.
+ * An interface which the TypedSchemaRepository uses to convert IDs, schema
+ * literals and subject names back and forth with Strings.
  */
-public class MessageStrings {
-  public static final String SCHEMA_WITH_NEWLINE_ERROR =
-          "ERROR: One of the schemas for this " +
-          "topic contains a new line and won't be parse-able properly. " +
-          "Please use a non-plain text format instead (e.g.: JSON).\n";
+public interface Converter<TYPE> {
+  /**
+   * Given a String literal, provide a strongly-typed instance.
+   *
+   * @param literal to be converted
+   * @return the requested TYPE
+   */
+  TYPE fromString(String literal);
 
-  public static final String SUBJECT_DOES_NOT_EXIST_ERROR =
-          "ERROR: This subject does not exist.\n";
-
-  public static final String SCHEMA_DOES_NOT_EXIST_ERROR =
-          "ERROR: This schema does not exist.\n";
+  /**
+   * Given a strongly-typed instance, provide its String literal representation.
+   *
+   * @param strongType instance to be converted
+   * @return the String literal representation
+   */
+  String toString(TYPE strongType);
 }

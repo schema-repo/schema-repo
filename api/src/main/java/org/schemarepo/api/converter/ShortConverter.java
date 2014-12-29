@@ -16,20 +16,23 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo;
+package org.schemarepo.api.converter;
 
 /**
- * Static Strings used to communicate a message to the end-user.
+ * To convert back and forth with Short.
+ *
+ * For most people this can be a reasonable choice for IDs. If anyone needs to
+ * store more than 65K schemas for a single subject, they should probably take
+ * a long hard look at how they're using the schema repo.
  */
-public class MessageStrings {
-  public static final String SCHEMA_WITH_NEWLINE_ERROR =
-          "ERROR: One of the schemas for this " +
-          "topic contains a new line and won't be parse-able properly. " +
-          "Please use a non-plain text format instead (e.g.: JSON).\n";
+public class ShortConverter implements Converter<Short> {
+  @Override
+  public Short fromString(String literal) {
+    return Short.parseShort(literal);
+  }
 
-  public static final String SUBJECT_DOES_NOT_EXIST_ERROR =
-          "ERROR: This subject does not exist.\n";
-
-  public static final String SCHEMA_DOES_NOT_EXIST_ERROR =
-          "ERROR: This schema does not exist.\n";
+  @Override
+  public String toString(Short strongType) {
+    return strongType.toString();
+  }
 }

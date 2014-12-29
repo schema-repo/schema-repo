@@ -29,7 +29,7 @@
 
   <artifactId>schema-repo-server</artifactId>
 
-  <name>Schema Repository Server</name>
+  <name>Schema Repository REST Server</name>
   <url>http://schemarepo.org</url>
   <description>Schema Repository REST server components</description>
 

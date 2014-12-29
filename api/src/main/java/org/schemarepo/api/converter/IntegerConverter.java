@@ -16,20 +16,25 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo;
+package org.schemarepo.api.converter;
 
 /**
- * Static Strings used to communicate a message to the end-user.
+ * To convert back and forth with Integer.
+ *
+ * As a converter for IDs, this is probably overkill for most use cases, since
+ * it allows billions of schemas per subject. There may be some highly generic
+ * and dynamic system architectures that would warrant such high cardinality,
+ * but for most intents and purposes, one should probably think twice about
+ * using this kind of ID.
  */
-public class MessageStrings {
-  public static final String SCHEMA_WITH_NEWLINE_ERROR =
-          "ERROR: One of the schemas for this " +
-          "topic contains a new line and won't be parse-able properly. " +
-          "Please use a non-plain text format instead (e.g.: JSON).\n";
+public class IntegerConverter implements Converter<Integer> {
+  @Override
+  public Integer fromString(String literal) {
+    return Integer.parseInt(literal);
+  }
 
-  public static final String SUBJECT_DOES_NOT_EXIST_ERROR =
-          "ERROR: This subject does not exist.\n";
-
-  public static final String SCHEMA_DOES_NOT_EXIST_ERROR =
-          "ERROR: This schema does not exist.\n";
+  @Override
+  public String toString(Integer strongType) {
+    return strongType.toString();
+  }
 }

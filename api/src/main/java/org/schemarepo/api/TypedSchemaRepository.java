@@ -38,6 +38,9 @@ import java.util.Map;
  *
  * N.B.: Currently, there is no cache eviction mechanism, so this can
  * potentially grow to unbounded sizes.
+ *
+ * N.B.2: registerIfLatest() is not supported in the TypedSchemaRepository,
+ * at least for now...
  */
 public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT> {
 
@@ -50,7 +53,6 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
   // Internal state
 
   private Map<SUBJECT, BiMap<ID, SCHEMA>> subjectToIdToSchemaCache;
-  private Map<SUBJECT, BiMap<SCHEMA, ID>> subjectToSchemaToIdCache;
 
   // Constructors
 
@@ -66,7 +68,6 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
     this.convertSubject = subjectConverter;
     this.defaultSubjectConfigBuilder = defaultSubjectConfigBuilder;
     this.subjectToIdToSchemaCache = new HashMap<SUBJECT, BiMap<ID, SCHEMA>>();
-    this.subjectToSchemaToIdCache = new HashMap<SUBJECT, BiMap<SCHEMA, ID>>();
   }
 
   public TypedSchemaRepository(
@@ -85,7 +86,7 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
    * @param subjectName of the desired idToSchemaCache
    * @return the idToSchemaCache for the requested subject
    */
-  private Map<ID, SCHEMA> getIdToSchemaCache(SUBJECT subjectName) {
+  private BiMap<ID, SCHEMA> getIdToSchemaCache(SUBJECT subjectName) {
     BiMap<ID, SCHEMA> idToSchemaCache = subjectToIdToSchemaCache.get(subjectName);
     if (idToSchemaCache == null) {
       synchronized (this) {
@@ -95,7 +96,6 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
         if (idToSchemaCache == null) {
           idToSchemaCache = HashBiMap.create();
           subjectToIdToSchemaCache.put(subjectName, idToSchemaCache);
-          subjectToSchemaToIdCache.put(subjectName, idToSchemaCache.inverse());
         }
       }
     }
@@ -109,9 +109,8 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
    * @param subjectName of the desired schemaToIdCache
    * @return the schemaToIdCache for the requested subject
    */
-  private Map<SCHEMA, ID> getSchemaToIdCache(SUBJECT subjectName){
-    getIdToSchemaCache(subjectName); // Ensures initialization
-    return subjectToSchemaToIdCache.get(subjectName);
+  private BiMap<SCHEMA, ID> getSchemaToIdCache(SUBJECT subjectName){
+    return getIdToSchemaCache(subjectName).inverse(); // Ensures initialization
   }
 
   // PUBLIC APIs BELOW
@@ -127,8 +126,18 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
    *         does not have any registered schemas yet.
    */
   public SCHEMA getSchema(SUBJECT subjectName, ID id) {
-    Map<ID, SCHEMA> idToSchemaCache = getIdToSchemaCache(subjectName);
-    SCHEMA schema = idToSchemaCache.get(id);
+    SCHEMA schema = null;
+
+    /**
+     * Implementation detail: We first peek directly in the cache without going
+     * through {@link #getIdToSchemaCache(Object)} because we don't want to
+     * bloat the cache with an empty map if the subject or ID does not exist
+     * in the remote repository.
+     */
+    Map<ID, SCHEMA> idToSchemaCache = subjectToIdToSchemaCache.get(subjectName);
+    if (idToSchemaCache != null) {
+      schema = idToSchemaCache.get(id);
+    }
 
     if (schema == null) {
       Subject subject = repo.lookup(convertSubject.toString(subjectName));
@@ -136,7 +145,7 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
         SchemaEntry schemaEntry = subject.lookupById(convertId.toString(id));
         if (schemaEntry != null) {
           schema = convertSchema.fromString(schemaEntry.getSchema());
-          idToSchemaCache.put(id, schema); // idempotent
+          getIdToSchemaCache(subjectName).put(id, schema); // idempotent
         }
       }
     }
@@ -161,11 +170,17 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
     if (subject != null) {
       SchemaEntry schemaEntry = subject.latest();
       if (schemaEntry != null) {
-        schema = convertSchema.fromString(schemaEntry.getSchema());
-        Map<SCHEMA, ID> schemaToIdCache = getSchemaToIdCache(subjectName);
-        if (!schemaToIdCache.containsKey(schema)) {
-          ID id = convertId.fromString(schemaEntry.getId());
-          schemaToIdCache.put(schema, id); // idempotent
+        Map<ID, SCHEMA> idToSchemaCache = getIdToSchemaCache(subjectName);
+        ID id = convertId.fromString(schemaEntry.getId());
+        /**
+         * Implementation detail: First, we check if the latest ID is already in
+         * cache, to avoid the cost of converting the String literal schema to
+         * its strong type if we already have it in-memory.
+         */
+        schema = idToSchemaCache.get(id);
+        if (schema == null) {
+          schema = convertSchema.fromString(schemaEntry.getSchema());
+          idToSchemaCache.put(id, schema); // idempotent
         }
       }
     }
@@ -184,8 +199,18 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
    *         does not have any registered schemas yet.
    */
   public ID getSchemaId(SUBJECT subjectName, SCHEMA schema) {
-    Map<SCHEMA, ID> schemaToIdCache = getSchemaToIdCache(subjectName);
-    ID id = schemaToIdCache.get(schema);
+    ID id = null;
+
+    /**
+     * Implementation detail: We first peek directly in the cache without going
+     * through {@link #getSchemaToIdCache(Object)} because we don't want to
+     * bloat the cache with an empty map if the subject or schema does not exist
+     * in the remote repository.
+     */
+    BiMap<ID, SCHEMA> idToSchemaCache = subjectToIdToSchemaCache.get(subjectName);
+    if (idToSchemaCache != null) {
+      id = idToSchemaCache.inverse().get(schema);
+    }
 
     if (id == null) {
       Subject subject = repo.lookup(convertSubject.toString(subjectName));
@@ -193,7 +218,7 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
         SchemaEntry schemaEntry = subject.lookupBySchema(convertSchema.toString(schema));
         if (schemaEntry != null) {
           id = convertId.fromString(schemaEntry.getId());
-          schemaToIdCache.put(schema, id); // idempotent
+          getSchemaToIdCache(subjectName).put(schema, id); // idempotent
         }
       }
     }
@@ -232,6 +257,15 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
         subject = repo.register(convertSubject.toString(subjectName),
                 defaultSubjectConfigBuilder.build());
       }
+      /**
+       * Implementation detail: The repo is expected to act as a synchronized,
+       * consistent authority. Therefore, even if there is a race condition
+       * where two calls to {@link #registerSchema(Object, Object)} happen
+       * simultaneously (whether with identical or with different schemas),
+       * the repo should correctly register each schema once with a unique ID.
+       * Therefore, the schemaToIdCache.put operation can be considered
+       * idempotent because it is immutable data which is going into the cache.
+       */
       SchemaEntry schemaEntry = subject.register(convertSchema.toString(schema));
       id = convertId.fromString(schemaEntry.getId());
       schemaToIdCache.put(schema, id); // idempotent
@@ -239,35 +273,6 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
 
     return id;
   }
-
-//  N.B.: I'd rather not support registerIfLatest in the typed client for now...
-//  public ID registerSchemaIfLatest(SUBJECT subjectName,
-//                                   SCHEMA newSchema,
-//                                   ID latestId,
-//                                   SCHEMA latestSchema)
-//          throws SchemaValidationException {
-//    // TODO: Determine if these are proper semantics for registerSchemaIfLatest....
-//    Map<SCHEMA, ID> schemaToIdCache = getSchemaToIdCache(subjectName);
-//    ID id = schemaToIdCache.get(newSchema);
-//
-//    if (id == null) {
-//      SchemaEntry latestSchemaEntry = new SchemaEntry(
-//              convertId.toString(latestId),
-//              convertSchema.toString(latestSchema));
-//      Subject subject = repo.lookup(convertSubject.toString(subjectName));
-//      if (subject == null) {
-//        subject = repo.register(convertSubject.toString(subjectName),
-//                defaultSubjectConfigBuilder.build());
-//      }
-//      SchemaEntry schemaEntry = subject.registerIfLatest(
-//              convertSchema.toString(newSchema),
-//              latestSchemaEntry);
-//      id = convertId.fromString(schemaEntry.getId());
-//      schemaToIdCache.put(newSchema, id); // idempotent
-//    }
-//
-//    return id;
-//  }
 
   /**
    * This retrieves mutable data, hence it is not cache-able and will always

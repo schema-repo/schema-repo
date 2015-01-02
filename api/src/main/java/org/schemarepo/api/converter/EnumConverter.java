@@ -16,20 +16,31 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo;
+package org.schemarepo.api.converter;
 
 /**
- * Static Strings used to communicate a message to the end-user.
+ * This converter can be useful for people who wish to constrain the usable
+ * subjects to a predetermined set of elements, i.e.: an Enum.
  */
-public class MessageStrings {
-  public static final String SCHEMA_WITH_NEWLINE_ERROR =
-          "ERROR: One of the schemas for this " +
-          "topic contains a new line and won't be parse-able properly. " +
-          "Please use a non-plain text format instead (e.g.: JSON).\n";
+public class EnumConverter<E extends Enum<E>> implements Converter<E> {
 
-  public static final String SUBJECT_DOES_NOT_EXIST_ERROR =
-          "ERROR: This subject does not exist.\n";
+  private Class<E> enumClass;
 
-  public static final String SCHEMA_DOES_NOT_EXIST_ERROR =
-          "ERROR: This schema does not exist.\n";
+  public EnumConverter(E enumInstance) {
+    this.enumClass = enumInstance.getDeclaringClass();
+  }
+
+  public EnumConverter(Class<E> enumClass) {
+    this.enumClass = enumClass;
+  }
+
+  @Override
+  public E fromString(String literal) {
+    return Enum.valueOf(enumClass, literal);
+  }
+
+  @Override
+  public String toString(E strongType) {
+    return strongType.name();
+  }
 }

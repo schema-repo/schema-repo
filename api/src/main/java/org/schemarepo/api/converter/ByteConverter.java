@@ -16,20 +16,24 @@
  * permissions and limitations under the License.
  */
 
-package org.schemarepo;
+package org.schemarepo.api.converter;
 
 /**
- * Static Strings used to communicate a message to the end-user.
+ * To convert back and forth with Byte.
+ *
+ * For most people this can be a reasonable choice for IDs. Most use cases
+ * should require less than 256 schemas per subject. However, if one wants to be
+ * extra paranoid about future extensibility, the ShortConverter should provide
+ * as much mileage as one might need.
  */
-public class MessageStrings {
-  public static final String SCHEMA_WITH_NEWLINE_ERROR =
-          "ERROR: One of the schemas for this " +
-          "topic contains a new line and won't be parse-able properly. " +
-          "Please use a non-plain text format instead (e.g.: JSON).\n";
+public class ByteConverter implements Converter<Byte> {
+  @Override
+  public Byte fromString(String literal) {
+    return Byte.parseByte(literal);
+  }
 
-  public static final String SUBJECT_DOES_NOT_EXIST_ERROR =
-          "ERROR: This subject does not exist.\n";
-
-  public static final String SCHEMA_DOES_NOT_EXIST_ERROR =
-          "ERROR: This schema does not exist.\n";
+  @Override
+  public String toString(Byte strongType) {
+    return strongType.toString();
+  }
 }

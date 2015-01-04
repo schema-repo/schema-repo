@@ -34,25 +34,22 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.sun.jersey.api.NotFoundException;
-
-import org.schemarepo.MessageStrings;
 import org.schemarepo.BaseRepository;
+import org.schemarepo.MessageStrings;
 import org.schemarepo.Repository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
-import org.schemarepo.json.JsonUtil;
 import org.schemarepo.config.Config;
+import org.schemarepo.json.JsonUtil;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.api.NotFoundException;

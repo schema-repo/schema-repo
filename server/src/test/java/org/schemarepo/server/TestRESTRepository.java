@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
@@ -34,11 +35,9 @@ import org.junit.Test;
 import org.schemarepo.BaseRepository;
 import org.schemarepo.InMemoryRepository;
 import org.schemarepo.ValidatorFactory;
-
-import com.sun.jersey.api.NotFoundException;
 import org.schemarepo.json.GsonJsonUtil;
 
-import javax.ws.rs.core.MediaType;
+import com.sun.jersey.api.NotFoundException;
 
 public class TestRESTRepository {
 

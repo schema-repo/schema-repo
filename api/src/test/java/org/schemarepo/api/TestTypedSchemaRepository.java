@@ -18,6 +18,10 @@
 
 package org.schemarepo.api;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.schemarepo.InMemoryRepository;
@@ -31,10 +35,6 @@ import org.schemarepo.api.converter.EnumConverter;
 import org.schemarepo.api.converter.IdentityConverter;
 import org.schemarepo.api.converter.IntegerConverter;
 import org.schemarepo.api.converter.ShortConverter;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Tests for the TypedSchemaRepository for ALL combinations of registered
@@ -52,7 +52,7 @@ public class TestTypedSchemaRepository {
   }
 
   private enum EnumSubjectExample {
-    sub1, sub2;
+    sub1, sub2
   }
 
   @Test

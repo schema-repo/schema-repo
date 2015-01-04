@@ -19,6 +19,7 @@
 package org.schemarepo;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -63,8 +64,10 @@ public abstract class DelegatingRepository extends BaseRepository {
   }
 
   @Override
-  protected void exposeConfiguration(final Map<String, String> properties) {
-    super.exposeConfiguration(properties);
-    properties.put("Delegate", repo.toString());
+  protected Map<String, String> exposeConfiguration() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>(super.exposeConfiguration());
+    properties.put("DELEGATE", repo.toString());
+    return properties;
   }
+
 }

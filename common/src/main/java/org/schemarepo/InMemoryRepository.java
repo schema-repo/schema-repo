@@ -29,34 +29,14 @@ public class InMemoryRepository extends AbstractBackendRepository {
 
   @Inject
   public InMemoryRepository(ValidatorFactory validators) {
-    this.validators = validators;
+    super(validators);
   }
 
   @Override
-  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
+  protected Subject instantiateSubject(final String subjectName, final SubjectConfig config) {
     return new MemSubject(subjectName, config);
   }
 
-  @Override
-  public Subject lookup(String subject) {
-    return subjects.lookup(subject);
-  }
-
-  /**
-   * List all subjects
-   */
-  @Override
-  public Iterable<Subject> subjects() {
-    return subjects.values();
-  }
-
-  /**
-   * This is a no-op for the InMemoryRepository
-   */
-  @Override
-  public void close() {
-    // no-op
-  }
 
   private static class MemSubject extends Subject {
     private final InMemorySchemaEntryCache schemas = new InMemorySchemaEntryCache();

@@ -19,7 +19,7 @@
 package org.schemarepo;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -53,18 +53,20 @@ public abstract class BaseRepository implements Repository {
    * Expose certain configuration elements as properties.
    * This can be used to construct a useful toString() response, for ex.
    * <p>Remember to call <pre>super</pre> when overriding!</p>
-   * @param properties Properties object to populate
+   * @return Map representing properties; note that the actual implementation may be immutable
    */
-  protected void exposeConfiguration(final Map<String, String> properties) {
+  protected Map<String, String> exposeConfiguration() {
+    return Collections.emptyMap();
   }
 
   @Override
   public String toString() {
-    final Map<String, String> properties = new LinkedHashMap<String, String>();
-    exposeConfiguration(properties);
     final StringBuilder builder = new StringBuilder().append(super.toString());
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
-      builder.append("\n\t").append(entry.getKey()).append("\t: ").append(entry.getValue());
+    final Map<String, String> properties = exposeConfiguration();
+    if (properties != null) {
+      for (Map.Entry<String, String> entry : properties.entrySet()) {
+        builder.append("\n\t").append(entry.getKey()).append("\t: ").append(entry.getValue());
+      }
     }
     return builder.toString();
   }

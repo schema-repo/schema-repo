@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -75,12 +76,9 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
   private static final String SCHEMA_IDS = "schema_ids";
   private static final String SCHEMA_POSTFIX = ".schema";
 
-  private final InMemorySubjectCache subjects = new InMemorySubjectCache();
-  private final ValidatorFactory validators;
   private final File rootDir;
   private final FileChannel lockChannel;
   private final FileLock fileLock;
-  private boolean closed = false;
 
   /**
    * Create a LocalFileSystemRepository in the directory path provided. Locks a file
@@ -94,7 +92,7 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
    */
   @Inject
   public LocalFileSystemRepository(@Named(Config.LOCAL_FILE_SYSTEM_PATH) String repoPath, ValidatorFactory validators) {
-    this.validators = validators;
+    super(validators);
     this.rootDir = new File(repoPath);
     if ((!rootDir.exists() && !rootDir.mkdirs()) || !rootDir.isDirectory()) {
       throw new java.lang.RuntimeException(
@@ -131,12 +129,6 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
     }
   }
 
-  private void isValid() {
-    if (closed) {
-      throw new IllegalStateException("LocalFileSystemRepository is closed");
-    }
-  }
-
   @Override
   public synchronized void close() {
     if (closed) {
@@ -164,12 +156,12 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
+  protected Subject instantiateSubject(final String subjectName, final SubjectConfig config) {
     return new FileSubject(new File(rootDir, subjectName));
   }
 
   @Override
-  protected void registerInternal(final String subjectName, final SubjectConfig config) {
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
     final File subjectDir = new File(rootDir, subjectName);
     if (subjectDir.exists()) {
       throw new RuntimeException(
@@ -265,11 +257,11 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
 
 
   @Override
-  protected void exposeConfiguration(final Map<String, String> properties) {
-    super.exposeConfiguration(properties);
+  protected Map<String, String> exposeConfiguration() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>(super.exposeConfiguration());
     properties.put(Config.LOCAL_FILE_SYSTEM_PATH, rootDir.getAbsolutePath());
+    return properties;
   }
-
 
   private abstract static class WriteOp {
     protected abstract void write(Writer writer) throws IOException;

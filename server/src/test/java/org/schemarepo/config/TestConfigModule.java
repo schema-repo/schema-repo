@@ -20,6 +20,8 @@ package org.schemarepo.config;
 
 import java.util.Properties;
 
+import org.junit.Assert;
+import org.junit.Test;
 import org.schemarepo.InMemoryRepository;
 import org.schemarepo.Repository;
 import org.schemarepo.SchemaEntry;
@@ -27,8 +29,6 @@ import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.Validator;
-import org.junit.Assert;
-import org.junit.Test;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

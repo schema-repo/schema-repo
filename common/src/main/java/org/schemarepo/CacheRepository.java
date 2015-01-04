@@ -18,12 +18,10 @@
 
 package org.schemarepo;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * CacheRepository is a {@link Repository} implementation that wraps another
@@ -42,19 +40,9 @@ import org.slf4j.LoggerFactory;
  * or the latest() schema because those are mutable.
  *
  */
-public class CacheRepository implements Repository {
+public class CacheRepository extends DelegatingRepository {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final Repository repo;
   private final RepositoryCache cache;
-
-  /**
-   * The runtimeID is a simple sanity check to validate that the repo that gets
-   * constructed by the dependency injection framework is the same that gets
-   * closed at the end of the runtime.
-   */
-  private final double runtimeID = Math.random();
 
   /**
    * Create a caching repository that wraps the provided repository using the
@@ -64,9 +52,8 @@ public class CacheRepository implements Repository {
    */
   @Inject
   public CacheRepository(Repository repo, RepositoryCache cache) {
-    this.repo = repo;
+    super(repo);
     this.cache = cache;
-    logger.info("Constructed {}", this);
   }
 
   @Override
@@ -99,9 +86,10 @@ public class CacheRepository implements Repository {
   }
 
   @Override
-  protected void exposeConfiguration(final Map<String, String> properties) {
-    super.exposeConfiguration(properties);
-    properties.put("cache", cache.toString());
+  protected Map<String, String> exposeConfiguration() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>(super.exposeConfiguration());
+    properties.put("CACHE", repo.toString());
+    return properties;
   }
 
 }

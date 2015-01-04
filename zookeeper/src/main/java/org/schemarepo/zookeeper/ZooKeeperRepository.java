@@ -19,12 +19,12 @@
 package org.schemarepo.zookeeper;
 
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -49,8 +49,6 @@ import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.ValidatorFactory;
 import org.schemarepo.config.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This {@link org.schemarepo.Repository} implementation stores its state using Zookeeper.
@@ -81,8 +79,9 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
                              @Named(Config.ZK_CONNECTION_TIMEOUT) Integer zkConnectionTimeout,
                              @Named(Config.ZK_CURATOR_SLEEP_TIME_BETWEEN_RETRIES) Integer curatorSleepTimeBetweenRetries,
                              @Named(Config.ZK_CURATOR_NUMBER_OF_RETRIES) Integer curatorNumberOfRetries,
-                             ValidatorFactory validators) {
-    this.validators = validators;
+                             ValidatorFactory validators)
+  {
+    super(validators);
 
     if (zkEnsemble == null || zkEnsemble.isEmpty()) {
       logger.error("The '{}' config is missing. Exiting.", Config.ZK_ENSEMBLE);
@@ -157,12 +156,12 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
     }
   }
 
-  protected Subject createSubjectInternal(final String subjectName, final SubjectConfig config) {
+  protected Subject instantiateSubject(final String subjectName, final SubjectConfig config) {
     return new ZooKeeperSubject(subjectName);
   }
 
   @Override
-  protected void registerInternal(final String subjectName, final SubjectConfig config) {
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
     // If the Subject is not in the local cache, we acquire the lock to create it
     acquireLock();
     try {
@@ -193,7 +192,7 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected boolean checkSubjectExistsInternal(final String subjectName) {
+  protected boolean checkSubjectExistsInBackend(final String subjectName) {
     // If not in cache, another instance may have created it
     try {
       // TODO: Allow this behavior to be disabled once we have async updating
@@ -224,6 +223,11 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
       logger.error("An exception occurred while accessing ZK!", e);
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public synchronized Iterable<Subject> subjects() {
+    return super.subjects();
   }
 
   /**
@@ -264,9 +268,10 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected void exposeConfiguration(final Map<String, String> properties) {
-    super.exposeConfiguration(properties);
+  protected Map<String, String> exposeConfiguration() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>(super.exposeConfiguration());
     properties.put(Config.ZK_ENSEMBLE, zkClient.getZookeeperClient().getCurrentConnectionString());
+    return properties;
   }
 
 

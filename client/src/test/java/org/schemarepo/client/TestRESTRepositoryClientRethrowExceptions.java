@@ -18,7 +18,6 @@
 
 package org.schemarepo.client;
 
-import org.schemarepo.json.GsonJsonUtil;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -27,6 +26,7 @@ import java.util.Properties;
 
 import org.junit.Test;
 import org.schemarepo.config.Config;
+import org.schemarepo.json.GsonJsonUtil;
 
 /**
  * Tests {@link RESTRepositoryClient} configured to rethrow any unexpected remote exception

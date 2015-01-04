@@ -18,8 +18,6 @@
 
 package org.schemarepo;
 
-import java.util.Collections;
-
 /**
  * Parent class of the actual backend (as opposed to decorating) repositories.
  * Each backend repository is expected to cache and validate its subjects.
@@ -34,12 +32,14 @@ public abstract class AbstractBackendRepository extends BaseRepository {
   }
 
   /**
-   * Concrete subclasses must override to return specific implementation of {@link org.schemarepo.Subject}
+   * Concrete subclasses must override to return specific implementation of {@link org.schemarepo.Subject}.
+   * Note that this instantiates the "right" subject only, any "side effects" (such as mutating persistent state)
+   * must be implemented in {@link #registerSubjectInBackend(String, SubjectConfig)}
    * @param subjectName subject name
    * @param config subject config
    * @return Subject
    */
-  protected abstract Subject createSubjectInternal(final String subjectName, final SubjectConfig config);
+  protected abstract Subject instantiateSubject(final String subjectName, final SubjectConfig config);
 
   /**
    * Creates, applies validation decorator, and caches subject.
@@ -48,7 +48,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
    * @return Subject the newly created instance or possibly pre-existing cached instance
    */
   protected final Subject createAndCacheSubject(final String subjectName, final SubjectConfig config) {
-    return subjectCache.add(Subject.validatingSubject(createSubjectInternal(subjectName, config), validators));
+    return subjectCache.add(Subject.validatingSubject(instantiateSubject(subjectName, config), validators));
   }
 
   @Override
@@ -56,7 +56,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     isValid();
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
-      registerInternal(subjectName, config);
+      registerSubjectInBackend(subjectName, config);
       subject = createAndCacheSubject(subjectName, config);
     } else {
       logger.debug("Subject {} already exists, reusing", subjectName);
@@ -70,7 +70,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
    * @param subjectName subject name
    * @param config subject config
    */
-  protected void registerInternal(final String subjectName, final SubjectConfig config) {
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
   }
 
   @Override
@@ -78,7 +78,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     isValid();
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
-      if (checkSubjectExistsInternal(subjectName)) {
+      if (checkSubjectExistsInBackend(subjectName)) {
         subject = createAndCacheSubject(subjectName, null);
       }
     }
@@ -91,28 +91,14 @@ public abstract class AbstractBackendRepository extends BaseRepository {
    * @param subjectName subject name
    * @return boolean
    */
-  protected boolean checkSubjectExistsInternal(final String subjectName) {
+  protected boolean checkSubjectExistsInBackend(final String subjectName) {
     return false;
   }
 
   @Override
   public synchronized Iterable<Subject> subjects() {
     isValid();
-    Iterable<String> subjectNames = fetchSubjectsInternal();
-    subjectNames = subjectNames != null ? subjectNames : Collections.EMPTY_SET;
-    for (String subjectName : subjectNames) {
-      createAndCacheSubject(subjectName, null);
-    }
     return subjectCache.values();
-  }
-
-  /**
-   * Backend-specific implementation of fetching all existing subjects.
-   * Default implementation assumes the cache is always up-to-date.
-   * @return Set set of subject names, null or empty set if nothing exists
-   */
-  protected Iterable<String> fetchSubjectsInternal() {
-    return null;
   }
 
 }

@@ -20,6 +20,7 @@ package org.schemarepo.server;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -33,13 +34,13 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.sun.jersey.api.NotFoundException;
-
+import org.schemarepo.BaseRepository;
 import org.schemarepo.MessageStrings;
 import org.schemarepo.Repository;
 import org.schemarepo.RepositoryUtil;
@@ -47,7 +48,11 @@ import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
+import org.schemarepo.config.Config;
 import org.schemarepo.json.JsonUtil;
+import org.slf4j.LoggerFactory;
+
+import com.sun.jersey.api.NotFoundException;
 
 /**
  * {@link RESTRepository} Is a JSR-311 REST Interface to a {@link Repository}.
@@ -58,8 +63,11 @@ import org.schemarepo.json.JsonUtil;
 @Path("/")
 public class RESTRepository {
 
+  private final Date startDate = new Date();
+
   private final Repository repo;
   private final JsonUtil jsonUtil;
+  private final Properties properties;
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -67,13 +75,19 @@ public class RESTRepository {
    * {@link org.schemarepo.CacheRepository} that wraps a non-caching
    * underlying repository.
    *
-   * @param repo
-   *          The {@link Repository} to wrap.
+   * @param repo The {@link Repository} to wrap.
+   * @param properties User-provided properties that were used to configure the underlying repository
+   *                   and {@link org.schemarepo.server.RepositoryServer}
    */
   @Inject
-  public RESTRepository(Repository repo, JsonUtil jsonUtil) {
+  public RESTRepository(Repository repo, JsonUtil jsonUtil, Properties properties) {
     this.repo = repo;
     this.jsonUtil = jsonUtil;
+    if (repo == null) {
+      throw new IllegalArgumentException("repo is null");
+    }
+    LoggerFactory.getLogger(getClass()).info("Wrapping " + repo);
+    this.properties = properties != null ? properties : new Properties();
   }
 
   /**
@@ -304,6 +318,41 @@ public class RESTRepository {
   @Path("{subject}/integral")
   public String getSubjectIntegralKeys(@PathParam("subject") String subject) {
     return Boolean.toString(getSubject(subject).integralKeys());
+  }
+
+  @GET
+  @Path("/status")
+  public Response getStatus() {
+    Status status = Status.OK;
+    String text = "OK";
+    if (repo instanceof BaseRepository) {
+      try {
+        ((BaseRepository)repo).isValid();
+      } catch (IllegalStateException e) {
+        status = Status.SERVICE_UNAVAILABLE;
+        text = e.getMessage();
+      }
+    } else {
+      text = "N/A";
+    }
+    return Response.status(status).entity(text + " : " + repo.getClass()).build();
+  }
+
+  @GET
+  @Path("/config")
+  public String getConfiguration(@QueryParam("includeDefaults") boolean includeDefaults) {
+    final Properties copyOfProperties = new Properties();
+    if (includeDefaults) {
+      copyOfProperties.putAll(Config.DEFAULTS);
+    }
+    copyOfProperties.putAll(properties);
+    final StringWriter writer = new StringWriter();
+    try {
+      copyOfProperties.store(writer, "Started on " + startDate);
+    } catch (IOException e) {
+      // should never happen
+    }
+    return writer.toString();
   }
 
   private Subject getSubject(String subjectName) {

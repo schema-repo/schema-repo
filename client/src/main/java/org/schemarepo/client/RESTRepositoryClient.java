@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -35,6 +36,7 @@ import javax.inject.Named;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.schemarepo.BaseRepository;
 import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
@@ -64,7 +66,7 @@ import com.sun.jersey.api.representation.Form;
  *
  * @see org.schemarepo.client.Avro1124RESTRepositoryClient
  */
-public class RESTRepositoryClient implements RepositoryClient {
+public class RESTRepositoryClient extends BaseRepository implements RepositoryClient {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -129,12 +131,27 @@ public class RESTRepositoryClient implements RepositoryClient {
     return subjectList;
   }
 
-  /**
-   * This is a no-op for the RESTRepositoryClient
-   */
+  public String getStatus() {
+    return webResource.path("status").get(String.class);
+  }
+
+  public Properties getConfiguration(final boolean includeDefaults) {
+    final Properties properties = new Properties();
+    try {
+      final String propsData = webResource.path("config")
+          .queryParam("includeDefaults", String.valueOf(includeDefaults)).get(String.class);
+      properties.load(new StringReader(propsData));
+    } catch (Exception e) {
+      logger.error("Failed to fetch config", e);
+    }
+    return properties;
+  }
+
   @Override
-  public void close() {
-    // no-op
+  protected Map<String, String> exposeConfiguration() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>(super.exposeConfiguration());
+    properties.put(Config.CLIENT_SERVER_URL, webResource.getURI().toString());
+    return properties;
   }
 
   private class RESTSubject extends Subject {

@@ -57,7 +57,6 @@ import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
  */
 public class RepositoryServer {
   private final Server server;
-  private final Injector injector;
 
   /**
    * Constructs an instance of this class, overlaying the default properties
@@ -79,7 +78,7 @@ public class RepositoryServer {
     if (Boolean.parseBoolean(props.getProperty(julPropName, Config.getDefault(julPropName)))) {
       final String slf4jBridgeHandlerName = "org.slf4j.bridge.SLF4JBridgeHandler";
       try {
-        final Class slf4jBridgeHandler = Class.forName(slf4jBridgeHandlerName, true,
+        final Class<?> slf4jBridgeHandler = Class.forName(slf4jBridgeHandlerName, true,
             Thread.currentThread().getContextClassLoader());
         slf4jBridgeHandler.getMethod("removeHandlersForRootLogger").invoke(null);
         slf4jBridgeHandler.getMethod("install").invoke(null);
@@ -95,9 +94,7 @@ public class RepositoryServer {
           julPropName, julToSlf4jDep);
     }
 
-    this.injector = Guice.createInjector(
-        new ConfigModule(props),
-        new ServerModule());
+    Injector injector = Guice.createInjector(new ConfigModule(props), new ServerModule());
     this.server = injector.getInstance(Server.class);
   }
 

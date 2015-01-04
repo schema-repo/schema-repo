@@ -206,27 +206,26 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected Iterable<String> fetchSubjectsInternal() {
+  public synchronized Iterable<Subject> subjects() {
+    isValid();
+
     try {
       // TODO: Allow this behavior to be disabled once we have async updating
       // of the cache via ZK Observers... This would protect ZK from getting
       // hammered too much at the expense of slightly stale data.
       Iterable<String> subjectsInZk = zkClient.getChildren().forPath("");
-      Set<String> filteredSubjects = new HashSet<String>();
       for (String subjectInZk : subjectsInZk) {
         if (!subjectInZk.equals(LOCKFILE)) {
-          filteredSubjects.add(subjectInZk);
+          if (subjectCache.lookup(subjectInZk) == null) {
+            createAndCacheSubject(subjectInZk, null);
+          }
         }
       }
-      return filteredSubjects;
     } catch (Exception e) {
       logger.error("An exception occurred while accessing ZK!", e);
       throw new RuntimeException(e);
     }
-  }
 
-  @Override
-  public synchronized Iterable<Subject> subjects() {
     return super.subjects();
   }
 

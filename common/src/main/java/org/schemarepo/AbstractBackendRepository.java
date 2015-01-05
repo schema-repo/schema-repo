@@ -66,12 +66,11 @@ public abstract class AbstractBackendRepository extends BaseRepository {
 
   /**
    * Backend-specific registration logic. This is called during registration upon cache miss.
-   * Usually is overridden by subclasses. By default, do nothing.
+   * Responsible for the persistent "side effects".
    * @param subjectName subject name
    * @param config subject config
    */
-  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
-  }
+  protected abstract void registerSubjectInBackend(final String subjectName, final SubjectConfig config);
 
   @Override
   public synchronized Subject lookup(final String subjectName) {

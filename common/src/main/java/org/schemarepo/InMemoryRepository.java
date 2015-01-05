@@ -37,6 +37,9 @@ public class InMemoryRepository extends AbstractBackendRepository {
     return new MemSubject(subjectName, config);
   }
 
+  @Override
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {}
+
 
   private static class MemSubject extends Subject {
     private final InMemorySchemaEntryCache schemas = new InMemorySchemaEntryCache();

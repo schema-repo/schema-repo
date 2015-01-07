@@ -38,15 +38,15 @@ public abstract class AbstractBackendRepository extends BaseRepository {
    * @param subjectName subject name
    * @return Subject
    */
-  protected abstract Subject instantiateSubject(final String subjectName);
+  protected abstract Subject getSubjectInstance(final String subjectName);
 
   /**
    * Creates, applies validation decorator, and caches subject.
    * @param subjectName subject name
    * @return Subject the newly created instance or possibly pre-existing cached instance
    */
-  protected final Subject createAndCacheSubject(final String subjectName) {
-    return cacheSubject(instantiateSubject(subjectName));
+  protected final Subject getAndCacheSubject(final String subjectName) {
+    return cacheSubject(getSubjectInstance(subjectName));
   }
 
   /**
@@ -64,7 +64,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
       registerSubjectInBackend(subjectName, config);
-      subject = createAndCacheSubject(subjectName);
+      subject = getAndCacheSubject(subjectName);
     } else {
       logger.debug("Subject {} already exists, reusing", subjectName);
     }
@@ -85,7 +85,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
       if (checkSubjectExistsInBackend(subjectName)) {
-        subject = createAndCacheSubject(subjectName);
+        subject = getAndCacheSubject(subjectName);
       }
     }
     return subject;

@@ -33,7 +33,7 @@ public class InMemoryRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected Subject instantiateSubject(final String subjectName) {
+  protected Subject getSubjectInstance(final String subjectName) {
     final Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
       throw new IllegalStateException("Unexpected: subject must've been cached by #registerSubjectInBackend");

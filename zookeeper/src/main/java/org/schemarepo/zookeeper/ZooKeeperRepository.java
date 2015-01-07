@@ -156,7 +156,7 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
     }
   }
 
-  protected Subject instantiateSubject(final String subjectName) {
+  protected Subject getSubjectInstance(final String subjectName) {
     return new ZooKeeperSubject(subjectName);
   }
 
@@ -217,7 +217,7 @@ public class ZooKeeperRepository extends AbstractBackendRepository {
       for (String subjectInZk : subjectsInZk) {
         if (!subjectInZk.equals(LOCKFILE)) {
           if (subjectCache.lookup(subjectInZk) == null) {
-            createAndCacheSubject(subjectInZk);
+            getAndCacheSubject(subjectInZk);
           }
         }
       }

@@ -156,7 +156,7 @@ public class LocalFileSystemRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected Subject instantiateSubject(final String subjectName) {
+  protected Subject getSubjectInstance(final String subjectName) {
     return new FileSubject(new File(rootDir, subjectName));
   }
 

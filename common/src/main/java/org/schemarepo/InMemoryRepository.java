@@ -25,40 +25,27 @@ import javax.inject.Inject;
  * A {@link Repository} that stores its data in memory and is not persistent.
  * This is useful primarily for testing.
  */
-public class InMemoryRepository implements Repository {
-  private final InMemorySubjectCache subjects = new InMemorySubjectCache();
-  private final ValidatorFactory validators;
+public class InMemoryRepository extends AbstractBackendRepository {
 
   @Inject
   public InMemoryRepository(ValidatorFactory validators) {
-    this.validators = validators;
+    super(validators);
   }
 
   @Override
-  public Subject register(String subjectName, SubjectConfig config) {
-    return subjects.add(Subject.validatingSubject(new MemSubject(subjectName, config), validators));
+  protected Subject getSubjectInstance(final String subjectName) {
+    final Subject subject = subjectCache.lookup(subjectName);
+    if (subject == null) {
+      throw new IllegalStateException("Unexpected: subject must've been cached by #registerSubjectInBackend");
+    }
+    return subject;
   }
 
   @Override
-  public Subject lookup(String subject) {
-    return subjects.lookup(subject);
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
+    cacheSubject(new MemSubject(subjectName, config));
   }
 
-  /**
-   * List all subjects
-   */
-  @Override
-  public Iterable<Subject> subjects() {
-    return subjects.values();
-  }
-
-  /**
-   * This is a no-op for the InMemoryRepository
-   */
-  @Override
-  public void close() {
-    // no-op
-  }
 
   private static class MemSubject extends Subject {
     private final InMemorySchemaEntryCache schemas = new InMemorySchemaEntryCache();

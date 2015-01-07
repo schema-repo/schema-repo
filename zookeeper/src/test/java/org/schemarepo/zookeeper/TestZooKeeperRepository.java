@@ -28,7 +28,6 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingCluster;
 import org.junit.After;
 import org.junit.BeforeClass;
-
 import org.schemarepo.AbstractTestPersistentRepository;
 import org.schemarepo.ValidatorFactory;
 import org.schemarepo.config.Config;

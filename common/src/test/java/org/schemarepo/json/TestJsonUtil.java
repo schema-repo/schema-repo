@@ -18,6 +18,9 @@
 
 package org.schemarepo.json;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.schemarepo.InMemoryRepository;
@@ -25,9 +28,6 @@ import org.schemarepo.Repository;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.Subject;
 import org.schemarepo.ValidatorFactory;
-
-import java.util.ArrayList;
-import java.util.Iterator;
 
 /**
  * Test suite for JSON serialization.

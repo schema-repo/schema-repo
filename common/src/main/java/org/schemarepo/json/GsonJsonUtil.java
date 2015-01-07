@@ -18,18 +18,18 @@
 
 package org.schemarepo.json;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.schemarepo.SchemaEntry;
+import org.schemarepo.Subject;
+
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-
-import org.schemarepo.SchemaEntry;
-import org.schemarepo.Subject;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * An implementation of JsonUtil that uses google-gson.

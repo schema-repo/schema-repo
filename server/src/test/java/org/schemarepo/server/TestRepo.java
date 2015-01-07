@@ -20,8 +20,8 @@ package org.schemarepo.server;
 
 import java.util.Properties;
 
-import org.schemarepo.InMemoryRepository;
 import org.junit.Test;
+import org.schemarepo.InMemoryRepository;
 
 public class TestRepo {
 

@@ -18,9 +18,10 @@
 
 package org.schemarepo.api;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.Lists;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.schemarepo.Repository;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
@@ -28,9 +29,9 @@ import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.api.converter.Converter;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Lists;
 
 /**
  * This is a convenience class for interacting with a Schema Repository in an

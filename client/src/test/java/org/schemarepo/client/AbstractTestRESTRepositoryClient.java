@@ -21,7 +21,6 @@ package org.schemarepo.client;
 import java.util.Properties;
 
 import org.schemarepo.AbstractTestPersistentRepository;
-import org.schemarepo.AbstractTestRepository;
 import org.schemarepo.InMemoryRepository;
 import org.schemarepo.config.Config;
 import org.schemarepo.server.RepositoryServer;

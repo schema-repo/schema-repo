@@ -33,12 +33,18 @@ public class InMemoryRepository extends AbstractBackendRepository {
   }
 
   @Override
-  protected Subject instantiateSubject(final String subjectName, final SubjectConfig config) {
-    return new MemSubject(subjectName, config);
+  protected Subject instantiateSubject(final String subjectName) {
+    final Subject subject = subjectCache.lookup(subjectName);
+    if (subject == null) {
+      throw new IllegalStateException("Unexpected: subject must've been cached by #registerSubjectInBackend");
+    }
+    return subject;
   }
 
   @Override
-  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {}
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
+    cacheSubject(new MemSubject(subjectName, config));
+  }
 
 
   private static class MemSubject extends Subject {

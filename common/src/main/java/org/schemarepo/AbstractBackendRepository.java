@@ -36,19 +36,26 @@ public abstract class AbstractBackendRepository extends BaseRepository {
    * Note that this instantiates the "right" subject only, any "side effects" (such as mutating persistent state)
    * must be implemented in {@link #registerSubjectInBackend(String, SubjectConfig)}
    * @param subjectName subject name
-   * @param config subject config
    * @return Subject
    */
-  protected abstract Subject instantiateSubject(final String subjectName, final SubjectConfig config);
+  protected abstract Subject instantiateSubject(final String subjectName);
 
   /**
    * Creates, applies validation decorator, and caches subject.
    * @param subjectName subject name
-   * @param config subject config
    * @return Subject the newly created instance or possibly pre-existing cached instance
    */
-  protected final Subject createAndCacheSubject(final String subjectName, final SubjectConfig config) {
-    return subjectCache.add(Subject.validatingSubject(instantiateSubject(subjectName, config), validators));
+  protected final Subject createAndCacheSubject(final String subjectName) {
+    return cacheSubject(instantiateSubject(subjectName));
+  }
+
+  /**
+   * Applies validation decorator, and caches subject.
+   * @param subject subject to cache
+   * @return Subject the passed instance or possibly pre-existing cached instance
+   */
+  protected final Subject cacheSubject(final Subject subject) {
+    return subjectCache.add(Subject.validatingSubject(subject, validators));
   }
 
   @Override
@@ -57,7 +64,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
       registerSubjectInBackend(subjectName, config);
-      subject = createAndCacheSubject(subjectName, config);
+      subject = createAndCacheSubject(subjectName);
     } else {
       logger.debug("Subject {} already exists, reusing", subjectName);
     }
@@ -78,7 +85,7 @@ public abstract class AbstractBackendRepository extends BaseRepository {
     Subject subject = subjectCache.lookup(subjectName);
     if (subject == null) {
       if (checkSubjectExistsInBackend(subjectName)) {
-        subject = createAndCacheSubject(subjectName, null);
+        subject = createAndCacheSubject(subjectName);
       }
     }
     return subject;

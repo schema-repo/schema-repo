@@ -359,16 +359,14 @@
   </build>
 
   <distributionManagement>
-    <repository>
-        <id>nexus-releases</id>
-        <name>Glassdoor Internal Repository</name>
-        <url>http://nexus.qa.glassdoor.local/nexus/content/repositories/releases</url>
-    </repository>
     <snapshotRepository>
-        <id>nexus-snapshots</id>
-        <name>Glassdoor Internal Repository</name>
-        <url>http://nexus.qa.glassdoor.local/nexus/content/repositories/snapshots</url>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
   </distributionManagement>
 
   <profiles>

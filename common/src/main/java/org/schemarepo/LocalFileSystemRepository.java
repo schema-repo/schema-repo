@@ -35,7 +35,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
@@ -65,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * the name of which is the schema id followed by the postfix '.schema'.</li>
  *
  */
-public class LocalFileSystemRepository implements Repository {
+public class LocalFileSystemRepository extends AbstractBackendRepository {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -74,12 +76,9 @@ public class LocalFileSystemRepository implements Repository {
   private static final String SCHEMA_IDS = "schema_ids";
   private static final String SCHEMA_POSTFIX = ".schema";
 
-  private final InMemorySubjectCache subjects = new InMemorySubjectCache();
-  private final ValidatorFactory validators;
   private final File rootDir;
   private final FileChannel lockChannel;
   private final FileLock fileLock;
-  private boolean closed = false;
 
   /**
    * Create a LocalFileSystemRepository in the directory path provided. Locks a file
@@ -93,7 +92,7 @@ public class LocalFileSystemRepository implements Repository {
    */
   @Inject
   public LocalFileSystemRepository(@Named(Config.LOCAL_FILE_SYSTEM_PATH) String repoPath, ValidatorFactory validators) {
-    this.validators = validators;
+    super(validators);
     this.rootDir = new File(repoPath);
     if ((!rootDir.exists() && !rootDir.mkdirs()) || !rootDir.isDirectory()) {
       throw new java.lang.RuntimeException(
@@ -119,7 +118,7 @@ public class LocalFileSystemRepository implements Repository {
           + rootDir.getAbsolutePath(), e);
     }
     // eagerly load up subjects
-    loadSubjects(rootDir, subjects);
+    loadSubjects(rootDir, subjectCache);
   }
 
   private void loadSubjects(File repoDir, SubjectCache subjects) {
@@ -127,12 +126,6 @@ public class LocalFileSystemRepository implements Repository {
       if (file.isDirectory()) {
         subjects.add(new FileSubject(file));
       }
-    }
-  }
-
-  private void isValid() {
-    if (closed) {
-      throw new IllegalStateException("LocalFileSystemRepository is closed");
     }
   }
 
@@ -155,39 +148,21 @@ public class LocalFileSystemRepository implements Repository {
         logger.debug("Failed to close lockChannel {}", lockChannel, e);
       }
     }
-  }
-
-  @Override
-  public synchronized Subject register(String subjectName, SubjectConfig config) {
-    isValid();
-    Subject subject = subjects.lookup(subjectName);
-    if (null == subject) {
-      subject = subjects.add(Subject.validatingSubject(createNewFileSubject(subjectName, config), validators));
+    try {
+      super.close();
+    } catch (IOException e) {
+      // should never happen
     }
-    return subject;
   }
 
   @Override
-  public synchronized Subject lookup(String subjectName) {
-    isValid();
-    return subjects.lookup(subjectName);
+  protected Subject getSubjectInstance(final String subjectName) {
+    return new FileSubject(new File(rootDir, subjectName));
   }
 
   @Override
-  public synchronized Iterable<Subject> subjects() {
-    isValid();
-    return subjects.values();
-  }
-
-  private FileSubject createNewFileSubject(String subject,
-      SubjectConfig config) {
-    File subjectDir = new File(rootDir, subject);
-    createNewSubjectDir(subjectDir, config);
-    return new FileSubject(subjectDir);
-  }
-
-  // create a new empty subject directory
-  private static void createNewSubjectDir(File subjectDir, SubjectConfig config) {
+  protected void registerSubjectInBackend(final String subjectName, final SubjectConfig config) {
+    final File subjectDir = new File(rootDir, subjectName);
     if (subjectDir.exists()) {
       throw new RuntimeException(
           "Cannot create a FileSubject, directory already exists: "
@@ -204,7 +179,6 @@ public class LocalFileSystemRepository implements Repository {
     Properties props = new Properties();
     props.putAll(RepositoryUtil.safeConfig(config).asMap());
     writePropertyFile(subjectProperties, props);
-
   }
 
   private static File createNewFileInDir(File dir, String filename) {
@@ -279,6 +253,14 @@ public class LocalFileSystemRepository implements Repository {
       throw new RuntimeException("file does not exist or is not writeable: "
           + file.toString());
     }
+  }
+
+
+  @Override
+  protected Map<String, String> exposeConfiguration() {
+    final Map<String, String> properties = new LinkedHashMap<String, String>(super.exposeConfiguration());
+    properties.put(Config.LOCAL_FILE_SYSTEM_PATH, rootDir.getAbsolutePath());
+    return properties;
   }
 
   private abstract static class WriteOp {

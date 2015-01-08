@@ -24,6 +24,13 @@ import java.util.Properties;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.schemarepo.CacheRepository;
+import org.schemarepo.Repository;
+import org.schemarepo.RepositoryCache;
+import org.schemarepo.Validator;
+import org.schemarepo.ValidatorFactory;
+import org.schemarepo.json.JsonUtil;
+
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -31,13 +38,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-
-import org.schemarepo.CacheRepository;
-import org.schemarepo.Repository;
-import org.schemarepo.RepositoryCache;
-import org.schemarepo.Validator;
-import org.schemarepo.ValidatorFactory;
-import org.schemarepo.json.JsonUtil;
 
 /**
  * A {@link Module} for configuration based on a set of {@link Properties}
@@ -104,5 +104,13 @@ public class ConfigModule implements Module {
   JsonUtil provideJsonUtil(Injector injector,
       @Named(Config.JSON_UTIL_IMPLEMENTATION) Class<JsonUtil> jsonUtilClass) {
     return injector.getInstance(jsonUtilClass);
+  }
+
+  @Provides
+  @Singleton
+  Properties properties() {
+    final Properties copyOfProps = new Properties();
+    copyOfProps.putAll(props);
+    return copyOfProps;
   }
 }

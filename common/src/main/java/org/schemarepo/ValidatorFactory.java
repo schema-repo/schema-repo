@@ -28,7 +28,9 @@ import java.util.Set;
  * names starting with "repo."
  */
 public class ValidatorFactory {
+
   public static final String REJECT_VALIDATOR = "repo.reject";
+  public static final ValidatorFactory EMPTY = new Builder().build();
 
   private final HashMap<String, Validator> validators;
 

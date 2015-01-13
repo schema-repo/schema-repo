@@ -18,8 +18,6 @@
 
 package org.schemarepo.server;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,12 +48,7 @@ public class HTMLRenderer implements Renderer {
 
   public HTMLRenderer() {
     cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
-    //cfg.setClassForTemplateLoading(getClass(), "/freemarker");
-    try {
-      cfg.setDirectoryForTemplateLoading(new File("M:\\Work\\Source\\GD\\workspace\\schema-repo\\server\\src\\main\\resources\\freemarker\\"));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    cfg.setClassForTemplateLoading(getClass(), "/freemarker");
     cfg.setCacheStorage(new NullCacheStorage());
     cfg.setDefaultEncoding("UTF-8");
     cfg.setTemplateExceptionHandler(TemplateExceptionHandler.HTML_DEBUG_HANDLER);

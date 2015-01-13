@@ -18,9 +18,10 @@
 
 package org.schemarepo.server;
 
-import java.io.IOException;
-import java.io.StringWriter;
+import static java.lang.String.format;
+
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -43,13 +44,13 @@ import javax.ws.rs.core.Response.Status;
 import org.schemarepo.BaseRepository;
 import org.schemarepo.MessageStrings;
 import org.schemarepo.Repository;
-import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.config.Config;
 import org.schemarepo.json.JsonUtil;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.api.NotFoundException;
@@ -63,11 +64,13 @@ import com.sun.jersey.api.NotFoundException;
 @Path("/")
 public class RESTRepository {
 
-  private final Date startDate = new Date();
+  private static final String DEFAULT_MEDIA_TYPE = MediaType.TEXT_PLAIN;
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Repository repo;
-  private final JsonUtil jsonUtil;
   private final Properties properties;
+  private final Map<String, Renderer> rendererByMediaType;
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -82,81 +85,66 @@ public class RESTRepository {
   @Inject
   public RESTRepository(Repository repo, JsonUtil jsonUtil, Properties properties) {
     this.repo = repo;
-    this.jsonUtil = jsonUtil;
     if (repo == null) {
       throw new IllegalArgumentException("repo is null");
     }
-    LoggerFactory.getLogger(getClass()).info("Wrapping " + repo);
+    logger.info("Wrapping " + repo);
     this.properties = properties != null ? properties : new Properties();
+    this.properties.setProperty("schema-repo.start-datetime", new Date().toString());
+    Renderer[] renderers = { new PlainTextRenderer(), new JsonRenderer(jsonUtil), new HTMLRenderer() };
+    rendererByMediaType = new HashMap<String, Renderer>(renderers.length, 1);
+    for (Renderer r : renderers) {
+      Renderer old = rendererByMediaType.put(r.getMediaType(), r);
+      if (old != null) {
+        logger.error("Renderers {} and {} both use the same media type {}", r, old, r.getMediaType());
+      }
+    }
+    if (rendererByMediaType.get(DEFAULT_MEDIA_TYPE) == null) {
+      throw new IllegalStateException(format("Default media type is set to %s but no renderer is configured to handle it", DEFAULT_MEDIA_TYPE));
+    }
+    logger.info("Supported media types: {}", rendererByMediaType.keySet());
   }
 
   /**
    * No @Path annotation means this services the "/" endpoint.
    *
-   * @return All subjects in the repository, serialized with
-   *         {@link RepositoryUtil#subjectsToString(Iterable)}
+   * @return All subjects in the repository, serialized with {@link org.schemarepo.RepositoryUtil#subjectsToString(Iterable)}
    */
   @GET
   public Response allSubjects(@HeaderParam("Accept") String mediaType) {
-    if (mediaType.equals(MediaType.APPLICATION_JSON)) {
-      return Response.ok(
-              jsonUtil.subjectsToJson(repo.subjects()),
-              MediaType.APPLICATION_JSON).build();
-    } else {
-      return Response.ok(
-              RepositoryUtil.subjectsToString(repo.subjects()),
-              MediaType.TEXT_PLAIN).build();
-
-    }
+    Renderer renderer = getRenderer(mediaType);
+    return Response.ok(renderer.renderSubjects(repo.subjects()), renderer.getMediaType()).build();
   }
 
   /**
    * Returns all schemas in the given subject, serialized with
-   * {@link RepositoryUtil#schemasToString(Iterable)}
+   * {@link org.schemarepo.RepositoryUtil#schemasToString(Iterable)}
    *
    * @param subject
    *          The name of the subject
-   * @return all schemas in the subject. Return a 404 Not Found if there is no
-   *         such subject
+   * @return all schemas in the subject. Return a 404 Not Found if there is no such subject
    */
   @GET
   @Path("{subject}/all")
-  public Response allSchemaEntries(
-          @HeaderParam("Accept") String mediaType,
-          @PathParam("subject") String subject) {
+  public Response allSchemaEntries(@HeaderParam("Accept") String mediaType, @PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
       throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
-    if (mediaType.equals(MediaType.APPLICATION_JSON)) {
-      return Response.ok(
-              jsonUtil.schemasToJson(s.allEntries()),
-              MediaType.APPLICATION_JSON).build();
-    } else {
-      return Response.ok(
-              RepositoryUtil.schemasToString(s.allEntries()),
-              MediaType.TEXT_PLAIN).build();
-
-    }
+    Renderer renderer = getRenderer(mediaType);
+    return Response.ok(renderer.renderSchemas(s.allEntries()), renderer.getMediaType()).build();
   }
 
   @GET
   @Path("{subject}/config")
-  public String subjectConfig(@PathParam("subject") String subject) {
+  public String subjectConfig(@HeaderParam("Accept") String mediaType, @PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
       throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
     Properties props = new Properties();
     props.putAll(s.getConfig().asMap());
-    StringWriter writer = new StringWriter();
-    try {
-      props.store(writer, null);
-    } catch (IOException e) {
-      // stringWriter can't throw ... but just in case
-      throw new RuntimeException(e);
-    }
-    return writer.toString();
+    return getRenderer(mediaType).renderProperties(props, "Configuration of subject " + subject);
   }
 
   /**
@@ -166,15 +154,13 @@ public class RESTRepository {
    *          the name of the subject
    * @param configParams
    *          the configuration values for the Subject, as form parameters
-   * @return the subject name in a 200 response if successful. HTTP 404 if the
-   *         subject does not exist, or HTTP 409 if there was a conflict
-   *         creating the subject
+   * @return the subject name in a 200 response if successful.
+   *         HTTP 404 if the subject does not exist, or HTTP 409 if there was a conflict creating the subject
    */
   @PUT
   @Path("{subject}")
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-  public Response createSubject(@PathParam("subject") String subject,
-      MultivaluedMap<String, String> configParams) {
+  public Response createSubject(@PathParam("subject") String subject, MultivaluedMap<String, String> configParams) {
     if (null == subject) {
       return Response.status(400).build();
     }
@@ -199,8 +185,8 @@ public class RESTRepository {
    */
   @GET
   @Path("{subject}/latest")
-  public String latest(@PathParam("subject") String subject) {
-    return exists(getSubject(subject).latest()).toString();
+  public String latest(@HeaderParam("Accept") String mediaType, @PathParam("subject") String subject) {
+    return getRenderer(mediaType).renderSchemaEntry(exists(getSubject(subject).latest()), true);
   }
 
   /**
@@ -215,9 +201,10 @@ public class RESTRepository {
    */
   @GET
   @Path("{subject}/id/{id}")
-  public String schemaFromId(@PathParam("subject") String subject,
-      @PathParam("id") String id) {
-    return exists(getSubject(subject).lookupById(id)).getSchema();
+  public String schemaFromId(@HeaderParam("Accept") String mediaType,
+                             @PathParam("subject") String subject, @PathParam("id") String id)
+  {
+    return getRenderer(mediaType).renderSchemaEntry(exists(getSubject(subject).lookupById(id)), false);
   }
 
   /**
@@ -340,19 +327,13 @@ public class RESTRepository {
 
   @GET
   @Path("/config")
-  public String getConfiguration(@QueryParam("includeDefaults") boolean includeDefaults) {
+  public String getConfiguration(@HeaderParam("Accept") String mediaType, @QueryParam("includeDefaults") boolean includeDefaults) {
     final Properties copyOfProperties = new Properties();
     if (includeDefaults) {
       copyOfProperties.putAll(Config.DEFAULTS);
     }
     copyOfProperties.putAll(properties);
-    final StringWriter writer = new StringWriter();
-    try {
-      copyOfProperties.store(writer, "Started on " + startDate);
-    } catch (IOException e) {
-      // should never happen
-    }
-    return writer.toString();
+    return getRenderer(mediaType).renderProperties(copyOfProperties, "Configuration of schema-repo server");
   }
 
   private Subject getSubject(String subjectName) {
@@ -368,6 +349,17 @@ public class RESTRepository {
       throw new NotFoundException(MessageStrings.SCHEMA_DOES_NOT_EXIST_ERROR);
     }
     return entry;
+  }
+
+  private Renderer getRenderer(String mediaType) {
+    // browsers usually send more than one type separated by comma
+    String primaryMediaType = mediaType == null ? null : mediaType.split(",")[0];
+    Renderer r = rendererByMediaType.get(primaryMediaType);
+    if (r == null) {
+      logger.info("No renderer configured for media type {}, defaulting to the renderer for {}", primaryMediaType, DEFAULT_MEDIA_TYPE);
+      r = rendererByMediaType.get(DEFAULT_MEDIA_TYPE);
+    }
+    return r;
   }
 
 }

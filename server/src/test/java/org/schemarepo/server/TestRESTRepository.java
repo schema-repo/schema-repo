@@ -70,7 +70,7 @@ public class TestRESTRepository {
 
   @Test(expected=NotFoundException.class)
   public void testNonExistentSubjectGetConfig() throws Exception {
-    repo.subjectConfig("nothing");
+    repo.subjectConfig(null, "nothing");
   }
 
   @Test
@@ -81,7 +81,7 @@ public class TestRESTRepository {
   @Test
   public void testGetConfig() throws IOException {
     Properties properties = new Properties();
-    properties.load(new StringReader(repo.getConfiguration(false)));
+    properties.load(new StringReader(repo.getConfiguration(null, false)));
     assertEquals("value", properties.getProperty("key"));
   }
 

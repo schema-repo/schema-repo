@@ -138,8 +138,8 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
   public Properties getConfiguration(final boolean includeDefaults) {
     final Properties properties = new Properties();
     try {
-      final String propsData = webResource.path("config")
-          .queryParam("includeDefaults", String.valueOf(includeDefaults)).get(String.class);
+      final String propsData = webResource.path("config").queryParam("includeDefaults", String.valueOf(includeDefaults))
+          .accept(MediaType.TEXT_PLAIN_TYPE).get(String.class);
       properties.load(new StringReader(propsData));
     } catch (Exception e) {
       logger.error("Failed to fetch config", e);
@@ -239,7 +239,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       String path = getName() + "/id/" + schemaId;
       SchemaEntry schemaEntry = null;
       try {
-        String schema = webResource.path(path).get(String.class);
+        String schema = webResource.path(path).accept(MediaType.TEXT_PLAIN_TYPE).get(String.class);
         schemaEntry = new SchemaEntry(schemaId, schema);
       } catch (RuntimeException e) {
         handleException(e, format("Failed to locate schema with ID %s in subject %s", schemaId, getName()), true);
@@ -252,7 +252,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       String path = getName() + "/latest";
       SchemaEntry schemaEntry = null;
       try {
-        String entryStr = webResource.path(path).get(String.class);
+        String entryStr = webResource.path(path).accept(MediaType.TEXT_PLAIN_TYPE).get(String.class);
         schemaEntry = new SchemaEntry(entryStr);
       } catch (RuntimeException e) {
         handleException(e, format("Failed to locate latest schema in subject %s", getName()), true);

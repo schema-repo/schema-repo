@@ -19,9 +19,11 @@
 package org.schemarepo.server;
 
 import static java.lang.String.format;
+import static javax.ws.rs.core.MediaType.WILDCARD;
 
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -36,10 +38,12 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Variant;
 
 import org.schemarepo.BaseRepository;
 import org.schemarepo.MessageStrings;
@@ -49,7 +53,6 @@ import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
 import org.schemarepo.config.Config;
-import org.schemarepo.json.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,13 +67,13 @@ import com.sun.jersey.api.NotFoundException;
 @Path("/")
 public class RESTRepository {
 
-  private static final String DEFAULT_MEDIA_TYPE = MediaType.TEXT_PLAIN;
-
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Repository repo;
   private final Properties properties;
   private final Map<String, Renderer> rendererByMediaType;
+  private final String defaultMediaType;
+  private final List<Variant> supportedMediaTypes;
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -81,9 +84,11 @@ public class RESTRepository {
    * @param repo The {@link Repository} to wrap.
    * @param properties User-provided properties that were used to configure the underlying repository
    *                   and {@link org.schemarepo.server.RepositoryServer}
+   * @param renderers determine which content types (based on the <pre>Accept</pre> header) will be supported;
+   *                  the first renderer will act as default (handling missing or wildcard media type)
    */
   @Inject
-  public RESTRepository(Repository repo, JsonUtil jsonUtil, Properties properties) {
+  public RESTRepository(Repository repo, Properties properties, List<? extends Renderer> renderers) {
     this.repo = repo;
     if (repo == null) {
       throw new IllegalArgumentException("repo is null");
@@ -91,18 +96,24 @@ public class RESTRepository {
     logger.info("Wrapping " + repo);
     this.properties = properties != null ? properties : new Properties();
     this.properties.setProperty("schema-repo.start-datetime", new Date().toString());
-    Renderer[] renderers = { new PlainTextRenderer(), new JsonRenderer(jsonUtil), new HTMLRenderer() };
-    rendererByMediaType = new HashMap<String, Renderer>(renderers.length, 1);
+    if (renderers == null || renderers.isEmpty()) {
+      throw new IllegalArgumentException("No renderers provided");
+    }
+    rendererByMediaType = new LinkedHashMap<String, Renderer>(renderers.size(), 1);
+    supportedMediaTypes = new ArrayList<Variant>(renderers.size());
     for (Renderer r : renderers) {
       Renderer old = rendererByMediaType.put(r.getMediaType(), r);
       if (old != null) {
         logger.error("Renderers {} and {} both use the same media type {}", r, old, r.getMediaType());
       }
+      supportedMediaTypes.add(new Variant(MediaType.valueOf(r.getMediaType()), null, null));
     }
-    if (rendererByMediaType.get(DEFAULT_MEDIA_TYPE) == null) {
-      throw new IllegalStateException(format("Default media type is set to %s but no renderer is configured to handle it", DEFAULT_MEDIA_TYPE));
-    }
+    defaultMediaType = renderers.get(0).getMediaType();
     logger.info("Supported media types: {}", rendererByMediaType.keySet());
+  }
+
+  public String getDefaultMediaType() {
+    return defaultMediaType;
   }
 
   /**
@@ -352,14 +363,20 @@ public class RESTRepository {
   }
 
   private Renderer getRenderer(String mediaType) {
-    // browsers usually send more than one type separated by comma
-    String primaryMediaType = mediaType == null ? null : mediaType.split(",")[0];
-    Renderer r = rendererByMediaType.get(primaryMediaType);
-    if (r == null) {
-      logger.info("No renderer configured for media type {}, defaulting to the renderer for {}", primaryMediaType, DEFAULT_MEDIA_TYPE);
-      r = rendererByMediaType.get(DEFAULT_MEDIA_TYPE);
+    // browsers usually send more than one type separated by comma, and each type may have parameters after semicolon
+    Renderer r;
+    for (String singleMediaType : (mediaType == null || mediaType.isEmpty() ? WILDCARD : mediaType).split(", ?")) {
+      singleMediaType = singleMediaType.split(";", 2)[0];
+      r = rendererByMediaType.get(WILDCARD.equals(singleMediaType) ? getDefaultMediaType() : singleMediaType);
+      if (r != null) {
+        logger.debug("Handling request with Accept: {} using {}", mediaType, r);
+        return r;
+      }
     }
-    return r;
+    logger.warn("No renderer configured for any of media types requested: {}, responding with the error status", mediaType);
+    throw new WebApplicationException(Response.notAcceptable(supportedMediaTypes)
+        .entity(format("Unsupported value of 'Accept' header: %s (supported values are %s)", mediaType, rendererByMediaType.keySet()))
+        .build());
   }
 
 }

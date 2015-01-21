@@ -26,8 +26,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,6 +40,7 @@ import org.schemarepo.ValidatorFactory;
 import org.schemarepo.json.GsonJsonUtil;
 
 import com.sun.jersey.api.NotFoundException;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class TestRESTRepository {
 
@@ -55,7 +58,7 @@ public class TestRESTRepository {
         super.close();
       }
     };
-    repo = new RESTRepository(backendRepo, new GsonJsonUtil(), properties);
+    repo = new MachineOrientedRESTRepository(backendRepo, properties, new GsonJsonUtil());
   }
 
   @After
@@ -88,12 +91,29 @@ public class TestRESTRepository {
   @Test
   public void testGetStatus() throws Exception {
     Response response = repo.getStatus();
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertEquals(Status.OK.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity().toString().startsWith("OK"));
     backendRepo.close();
     response = repo.getStatus();
-    assertEquals(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
+    assertEquals(Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
     assertFalse(response.getEntity().toString().startsWith("OK"));
+  }
+
+  @Test
+  public void testInfluenceOfMediaType() {
+    final String contentType = "Content-Type";
+    repo.createSubject("dummy", new MultivaluedMapImpl());
+    // null and all-inclusive (* or */*) mediaTypes result in the default configured renderer being used
+    for (String mediaType: new String[] {null, "", "*/*", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"}) {
+      Response response;
+      try {
+        response = repo.allSubjects(mediaType);
+      } catch (WebApplicationException e) {
+        response = e.getResponse();
+      }
+      assertEquals(Status.OK.getStatusCode(), response.getStatus());
+      assertEquals(repo.getDefaultMediaType(), response.getMetadata().getFirst(contentType).toString());
+    }
   }
 
 }

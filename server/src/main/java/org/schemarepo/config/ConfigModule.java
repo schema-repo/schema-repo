@@ -27,6 +27,7 @@ import javax.inject.Singleton;
 import org.schemarepo.CacheRepository;
 import org.schemarepo.Repository;
 import org.schemarepo.RepositoryCache;
+import org.schemarepo.RepositoryUtil;
 import org.schemarepo.Validator;
 import org.schemarepo.ValidatorFactory;
 import org.schemarepo.json.JsonUtil;
@@ -85,7 +86,7 @@ public class ConfigModule implements Module {
 
   @Provides
   @Singleton
-  ValidatorFactory provideValidatorFactory(Injector injector) {
+  ValidatorFactory provideValidatorFactory(Injector injector, @Named(Config.DEFAULT_SUBJECT_VALIDATORS) String defaultSubjectValidators) {
     ValidatorFactory.Builder builder = new ValidatorFactory.Builder();
     for(String prop : props.stringPropertyNames()) {
       if (prop.startsWith(Config.VALIDATOR_PREFIX)) {
@@ -96,6 +97,9 @@ public class ConfigModule implements Module {
         builder.setValidator(validatorName, injector.getInstance(validatorClass));
       }
     }
+
+    // assign the default subject validators
+    builder.setDefaultValidators(RepositoryUtil.commaSplit(defaultSubjectValidators));
     return builder.build();
   }
 

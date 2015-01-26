@@ -19,6 +19,8 @@
 package org.schemarepo;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -154,4 +156,39 @@ public final class RepositoryUtil {
     }
   }
 
+
+  /**
+   * Helper method for splitting a string by a delimiter with
+   * java.util.String.split().
+   * Omits empty values.
+   * @param toSplit The string to split.  If null, an empty
+   *   String[] is returned
+   * @return A String[] containing the non-empty values resulting
+   *   from the split.  Does not return null.
+   */
+  public static List<String> commaSplit(String toSplit) {
+    if (toSplit == null) {
+      return Collections.emptyList();
+    }
+    ArrayList<String> list = new ArrayList<String>();
+    for(String s : toSplit.split(",")) {
+      s = s.trim();
+      if (!s.isEmpty()) {
+        list.add(s);
+      }
+    }
+    return list;
+  }
+
+  public static String commaJoin(Collection<String> strings) {
+    StringBuilder sb = new StringBuilder();
+    for(String s : strings) {
+      sb.append(s).append(',');
+    }
+    // trim the trailing comma
+    if (sb.length() > 0)
+      return sb.substring(0,sb.length()-1);
+
+    return sb.toString();
+  }
 }

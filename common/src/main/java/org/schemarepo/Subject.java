@@ -219,7 +219,17 @@ public abstract class Subject {
     if (null == subject) {
       return subject;
     }
-    List<Validator> validators = factory.getValidators(subject.getConfig().getValidators());
+
+    List<Validator> validators;
+    SubjectConfig config = subject.getConfig();
+
+    // if the validators key is not specified in the subject config, get the default ones.
+    // ensure that even an empty set is honored as "no validators"
+    if (config.get(SubjectConfig.VALIDATORS_KEY) != null)
+      validators = factory.getValidators(config.getValidators());
+    else
+      validators = factory.getValidators(factory.getDefaultSubjectValidators());
+
     if (!validators.isEmpty()) {
       return new ValidatingSubject(subject, new CompositeValidator(validators));
     } else {

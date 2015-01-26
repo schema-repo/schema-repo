@@ -54,12 +54,16 @@ public class TestSubjectConfig {
     SubjectConfig conf2 = new SubjectConfig.Builder()
       .set("repo.validators", null)
       .build();
-    Assert.assertEquals(conf, conf2);
-    Assert.assertEquals(conf2, empty);
+
+    // Explicitly setting empty or null validators is NOT the same as no validators
+    // due to the default subject validators functionality (see Issue 38)
+    Assert.assertNotEquals(conf, conf2);
+    Assert.assertNotEquals(conf2, empty);
+    Assert.assertNotEquals(conf.hashCode(), conf2.hashCode());
+
     Assert.assertFalse(conf.equals(null));
     Assert.assertFalse(conf.equals(new Object()));
     Assert.assertEquals(conf.hashCode(), empty.hashCode());
-    Assert.assertEquals(conf.hashCode(), conf2.hashCode());
 
     String k = "key";
     String v = "val";

@@ -18,18 +18,10 @@
 
 package org.schemarepo.server;
 
-import static java.lang.String.format;
-import static javax.ws.rs.core.MediaType.WILDCARD;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -37,24 +29,17 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Variant;
 
-import org.schemarepo.BaseRepository;
 import org.schemarepo.MessageStrings;
 import org.schemarepo.Repository;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
-import org.schemarepo.config.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.api.NotFoundException;
 
@@ -62,18 +47,13 @@ import com.sun.jersey.api.NotFoundException;
  * {@link RESTRepository} Is a JSR-311 REST Interface to a {@link Repository}.
  *
  * Combine with {@link RepositoryServer} to run an embedded REST server.
+ *
+ * This is an abstract base class. Concrete implementations (such as
+ * {@link org.schemarepo.server.MachineOrientedRESTRepository} and {@link org.schemarepo.server.HumanOrientedRESTRepository})
+ * handle media types differently and are accessible via different paths, though the actual functionality of
+ * accessing the underlying repository server is contained in this class.
  */
-@Singleton
-@Path("/")
-public class RESTRepository {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final Repository repo;
-  private final Properties properties;
-  private final Map<String, Renderer> rendererByMediaType;
-  private final String defaultMediaType;
-  private final List<Variant> supportedMediaTypes;
+public abstract class RESTRepository extends BaseRESTRepository {
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -82,38 +62,11 @@ public class RESTRepository {
    * underlying repository.
    *
    * @param repo The {@link Repository} to wrap.
-   * @param properties User-provided properties that were used to configure the underlying repository
-   *                   and {@link org.schemarepo.server.RepositoryServer}
    * @param renderers determine which content types (based on the <pre>Accept</pre> header) will be supported;
    *                  the first renderer will act as default (handling missing or wildcard media type)
    */
-  @Inject
-  public RESTRepository(Repository repo, Properties properties, List<? extends Renderer> renderers) {
-    this.repo = repo;
-    if (repo == null) {
-      throw new IllegalArgumentException("repo is null");
-    }
-    logger.info("Wrapping " + repo);
-    this.properties = properties != null ? properties : new Properties();
-    this.properties.setProperty("schema-repo.start-datetime", new Date().toString());
-    if (renderers == null || renderers.isEmpty()) {
-      throw new IllegalArgumentException("No renderers provided");
-    }
-    rendererByMediaType = new LinkedHashMap<String, Renderer>(renderers.size(), 1);
-    supportedMediaTypes = new ArrayList<Variant>(renderers.size());
-    for (Renderer r : renderers) {
-      Renderer old = rendererByMediaType.put(r.getMediaType(), r);
-      if (old != null) {
-        logger.error("Renderers {} and {} both use the same media type {}", r, old, r.getMediaType());
-      }
-      supportedMediaTypes.add(new Variant(MediaType.valueOf(r.getMediaType()), null, null));
-    }
-    defaultMediaType = renderers.get(0).getMediaType();
-    logger.info("Supported media types: {}", rendererByMediaType.keySet());
-  }
-
-  public String getDefaultMediaType() {
-    return defaultMediaType;
+  public RESTRepository(Repository repo, List<? extends Renderer> renderers) {
+    super(repo, renderers);
   }
 
   /**
@@ -318,35 +271,6 @@ public class RESTRepository {
     return Boolean.toString(getSubject(subject).integralKeys());
   }
 
-  @GET
-  @Path("/status")
-  public Response getStatus() {
-    Status status = Status.OK;
-    String text = "OK";
-    if (repo instanceof BaseRepository) {
-      try {
-        ((BaseRepository)repo).isValid();
-      } catch (IllegalStateException e) {
-        status = Status.SERVICE_UNAVAILABLE;
-        text = e.getMessage();
-      }
-    } else {
-      text = "N/A";
-    }
-    return Response.status(status).entity(text + " : " + repo.getClass()).build();
-  }
-
-  @GET
-  @Path("/config")
-  public String getConfiguration(@HeaderParam("Accept") String mediaType, @QueryParam("includeDefaults") boolean includeDefaults) {
-    final Properties copyOfProperties = new Properties();
-    if (includeDefaults) {
-      copyOfProperties.putAll(Config.DEFAULTS);
-    }
-    copyOfProperties.putAll(properties);
-    return getRenderer(mediaType).renderProperties(copyOfProperties, "Configuration of schema-repo server");
-  }
-
   private Subject getSubject(String subjectName) {
     Subject subject = repo.lookup(subjectName);
     if (null == subject) {
@@ -360,23 +284,6 @@ public class RESTRepository {
       throw new NotFoundException(MessageStrings.SCHEMA_DOES_NOT_EXIST_ERROR);
     }
     return entry;
-  }
-
-  private Renderer getRenderer(String mediaType) {
-    // browsers usually send more than one type separated by comma, and each type may have parameters after semicolon
-    Renderer r;
-    for (String singleMediaType : (mediaType == null || mediaType.isEmpty() ? WILDCARD : mediaType).split(", ?")) {
-      singleMediaType = singleMediaType.split(";", 2)[0];
-      r = rendererByMediaType.get(WILDCARD.equals(singleMediaType) ? getDefaultMediaType() : singleMediaType);
-      if (r != null) {
-        logger.debug("Handling request with Accept: {} using {}", mediaType, r);
-        return r;
-      }
-    }
-    logger.warn("No renderer configured for any of media types requested: {}, responding with the error status", mediaType);
-    throw new WebApplicationException(Response.notAcceptable(supportedMediaTypes)
-        .entity(format("Unsupported value of 'Accept' header: %s (supported values are %s)", mediaType, rendererByMediaType.keySet()))
-        .build());
   }
 
 }

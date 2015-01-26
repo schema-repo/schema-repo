@@ -1,4 +1,10 @@
 <#if subjects?has_content>
+<script language="JavaScript">
+    path = window.location.pathname;
+    if (path.charAt(path.length-1) != '/') {
+        window.location.assign(window.location.href + "/");
+    }
+</script>
 <h2>Registered Subjects:</h2>
 <table>
     <#list subjects as subject>

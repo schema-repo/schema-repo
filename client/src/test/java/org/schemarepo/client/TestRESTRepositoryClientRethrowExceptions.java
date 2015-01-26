@@ -46,12 +46,13 @@ public class TestRESTRepositoryClientRethrowExceptions extends AbstractTestRESTR
 
   @Test
   public void testGetConfig() {
+    final String defaultKey = Config.JETTY_HEADER_SIZE;
     Properties properties = repo.getConfiguration(false);
     assertEquals("localhost", properties.getProperty(Config.JETTY_HOST));
-    assertNull(properties.getProperty(Config.JETTY_PATH));
+    assertNull(properties.getProperty(defaultKey));
     properties = repo.getConfiguration(true);
     assertEquals("localhost", properties.getProperty(Config.JETTY_HOST));
-    assertEquals("/schema-repo", properties.getProperty(Config.JETTY_PATH));
+    assertEquals(Config.getDefault(defaultKey), properties.getProperty(defaultKey));
   }
 
 }

@@ -19,7 +19,6 @@
 package org.schemarepo.server;
 
 import java.util.Arrays;
-import java.util.Properties;
 
 import javax.ws.rs.Path;
 
@@ -40,12 +39,11 @@ public class MachineOrientedRESTRepository extends RESTRepository {
   /**
    * All parameters will be injected by Guice framework.
    * @param repo the backend repository
-   * @param properties configuration properties
    * @param jsonUtil implementation of JSON utils
    */
   @Inject
-  public MachineOrientedRESTRepository(Repository repo, Properties properties, JsonUtil jsonUtil) {
-    super(repo, properties, Arrays.asList(new PlainTextRenderer(), new JsonRenderer(jsonUtil)));
+  public MachineOrientedRESTRepository(Repository repo, JsonUtil jsonUtil) {
+    super(repo, Arrays.asList(new PlainTextRenderer(), new JsonRenderer(jsonUtil)));
   }
 
 }

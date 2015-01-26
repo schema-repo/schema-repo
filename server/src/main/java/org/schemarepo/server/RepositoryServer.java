@@ -176,6 +176,7 @@ public class RepositoryServer {
       serve("/*").with(GuiceContainer.class);
       bind(MachineOrientedRESTRepository.class);
       bind(HumanOrientedRESTRepository.class);
+      bind(AuxiliaryRESTRepository.class);
     }
 
     @Provides

@@ -81,6 +81,14 @@
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
     </dependency>
+    <!-- to include logback-test.xml, otherwise the production logback.xml is used when running tests -->
+    <dependency>
+      <groupId>org.schemarepo</groupId>
+      <artifactId>schema-repo-common</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
 </project>

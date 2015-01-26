@@ -38,11 +38,10 @@ public class HumanOrientedRESTRepository extends RESTRepository {
   /**
    * All parameters are injected by Guice frawework.
    * @param repo backend repository
-   * @param properties configuration properties
    */
   @Inject
   public HumanOrientedRESTRepository(Repository repo, Properties properties) {
-    super(repo, properties, Collections.singletonList(new HTMLRenderer()));
+    super(repo, Collections.singletonList(new HTMLRenderer()));
   }
 
 }

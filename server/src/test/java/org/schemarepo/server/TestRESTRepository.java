@@ -46,6 +46,7 @@ public class TestRESTRepository {
 
   BaseRepository backendRepo;
   RESTRepository repo;
+  AuxiliaryRESTRepository auxRepo;
 
   @Before
   public void setUp() {
@@ -58,7 +59,8 @@ public class TestRESTRepository {
         super.close();
       }
     };
-    repo = new MachineOrientedRESTRepository(backendRepo, properties, new GsonJsonUtil());
+    repo = new MachineOrientedRESTRepository(backendRepo, new GsonJsonUtil());
+    auxRepo = new AuxiliaryRESTRepository(backendRepo, properties);
   }
 
   @After
@@ -84,23 +86,23 @@ public class TestRESTRepository {
   @Test
   public void testGetConfig() throws IOException {
     Properties properties = new Properties();
-    properties.load(new StringReader(repo.getConfiguration(null, false)));
+    properties.load(new StringReader(auxRepo.getConfiguration(null, false).getEntity().toString()));
     assertEquals("value", properties.getProperty("key"));
   }
 
   @Test
   public void testGetStatus() throws Exception {
-    Response response = repo.getStatus();
+    Response response = auxRepo.getStatus();
     assertEquals(Status.OK.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity().toString().startsWith("OK"));
     backendRepo.close();
-    response = repo.getStatus();
+    response = auxRepo.getStatus();
     assertEquals(Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
     assertFalse(response.getEntity().toString().startsWith("OK"));
   }
 
   @Test
-  public void testInfluenceOfMediaType() {
+  public void testInfluenceOfMediaTypeSuccess() {
     final String contentType = "Content-Type";
     repo.createSubject("dummy", new MultivaluedMapImpl());
     // null and all-inclusive (* or */*) mediaTypes result in the default configured renderer being used
@@ -114,6 +116,22 @@ public class TestRESTRepository {
       assertEquals(Status.OK.getStatusCode(), response.getStatus());
       assertEquals(repo.getDefaultMediaType(), response.getMetadata().getFirst(contentType).toString());
     }
+
+    Response response = repo.allSubjects("application/json");
+    assertEquals(Status.OK.getStatusCode(), response.getStatus());
+    assertEquals("application/json", response.getMetadata().getFirst(contentType).toString());
+  }
+
+  @Test
+  public void testInfluenceOfMediaTypeFailure() {
+    final String contentType = "Content-Type";
+    Response response = null;
+    try {
+      repo.allSubjects("image/jpeg");
+    } catch (WebApplicationException e) {
+      response = e.getResponse();
+    }
+    assertEquals(Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus());
   }
 
 }

@@ -43,9 +43,9 @@ import com.google.common.collect.Lists;
  * N.B.2: registerIfLatest() is not supported in the TypedSchemaRepository,
  * at least for now...
  */
-public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT> {
+public class TypedSchemaRepository<ID, SCHEMA, SUBJECT> {
 
-  private REPO repo;
+  private Repository repo;
   private Converter<ID> convertId;
   private Converter<SCHEMA> convertSchema;
   private Converter<SUBJECT> convertSubject;
@@ -58,7 +58,7 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
   // Constructors
 
   public TypedSchemaRepository(
-          REPO repo,
+          Repository repo,
           Converter<ID> idConverter,
           Converter<SCHEMA> schemaConverter,
           Converter<SUBJECT> subjectConverter,
@@ -72,7 +72,7 @@ public class TypedSchemaRepository<REPO extends Repository, ID, SCHEMA, SUBJECT>
   }
 
   public TypedSchemaRepository(
-          REPO repo,
+          Repository repo,
           Converter<ID> idConverter,
           Converter<SCHEMA> schemaConverter,
           Converter<SUBJECT> subjectConverter) {

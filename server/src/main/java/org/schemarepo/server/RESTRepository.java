@@ -18,15 +18,10 @@
 
 package org.schemarepo.server;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -34,23 +29,17 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.schemarepo.BaseRepository;
 import org.schemarepo.MessageStrings;
 import org.schemarepo.Repository;
-import org.schemarepo.RepositoryUtil;
 import org.schemarepo.SchemaEntry;
 import org.schemarepo.SchemaValidationException;
 import org.schemarepo.Subject;
 import org.schemarepo.SubjectConfig;
-import org.schemarepo.config.Config;
-import org.schemarepo.json.JsonUtil;
-import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.api.NotFoundException;
 
@@ -58,16 +47,13 @@ import com.sun.jersey.api.NotFoundException;
  * {@link RESTRepository} Is a JSR-311 REST Interface to a {@link Repository}.
  *
  * Combine with {@link RepositoryServer} to run an embedded REST server.
+ *
+ * This is an abstract base class. Concrete implementations (such as
+ * {@link org.schemarepo.server.MachineOrientedRESTRepository} and {@link org.schemarepo.server.HumanOrientedRESTRepository})
+ * handle media types differently and are accessible via different paths, though the actual functionality of
+ * accessing the underlying repository server is contained in this class.
  */
-@Singleton
-@Path("/")
-public class RESTRepository {
-
-  private final Date startDate = new Date();
-
-  private final Repository repo;
-  private final JsonUtil jsonUtil;
-  private final Properties properties;
+public abstract class RESTRepository extends BaseRESTRepository {
 
   /**
    * Create a {@link RESTRepository} that wraps a given {@link Repository}
@@ -76,87 +62,53 @@ public class RESTRepository {
    * underlying repository.
    *
    * @param repo The {@link Repository} to wrap.
-   * @param properties User-provided properties that were used to configure the underlying repository
-   *                   and {@link org.schemarepo.server.RepositoryServer}
+   * @param renderers determine which content types (based on the <pre>Accept</pre> header) will be supported;
+   *                  the first renderer will act as default (handling missing or wildcard media type)
    */
-  @Inject
-  public RESTRepository(Repository repo, JsonUtil jsonUtil, Properties properties) {
-    this.repo = repo;
-    this.jsonUtil = jsonUtil;
-    if (repo == null) {
-      throw new IllegalArgumentException("repo is null");
-    }
-    LoggerFactory.getLogger(getClass()).info("Wrapping " + repo);
-    this.properties = properties != null ? properties : new Properties();
+  public RESTRepository(Repository repo, List<? extends Renderer> renderers) {
+    super(repo, renderers);
   }
 
   /**
    * No @Path annotation means this services the "/" endpoint.
    *
-   * @return All subjects in the repository, serialized with
-   *         {@link RepositoryUtil#subjectsToString(Iterable)}
+   * @return All subjects in the repository, serialized with {@link org.schemarepo.RepositoryUtil#subjectsToString(Iterable)}
    */
   @GET
   public Response allSubjects(@HeaderParam("Accept") String mediaType) {
-    if (mediaType.equals(MediaType.APPLICATION_JSON)) {
-      return Response.ok(
-              jsonUtil.subjectsToJson(repo.subjects()),
-              MediaType.APPLICATION_JSON).build();
-    } else {
-      return Response.ok(
-              RepositoryUtil.subjectsToString(repo.subjects()),
-              MediaType.TEXT_PLAIN).build();
-
-    }
+    Renderer renderer = getRenderer(mediaType);
+    return Response.ok(renderer.renderSubjects(repo.subjects()), renderer.getMediaType()).build();
   }
 
   /**
    * Returns all schemas in the given subject, serialized with
-   * {@link RepositoryUtil#schemasToString(Iterable)}
+   * {@link org.schemarepo.RepositoryUtil#schemasToString(Iterable)}
    *
    * @param subject
    *          The name of the subject
-   * @return all schemas in the subject. Return a 404 Not Found if there is no
-   *         such subject
+   * @return all schemas in the subject. Return a 404 Not Found if there is no such subject
    */
   @GET
   @Path("{subject}/all")
-  public Response allSchemaEntries(
-          @HeaderParam("Accept") String mediaType,
-          @PathParam("subject") String subject) {
+  public Response allSchemaEntries(@HeaderParam("Accept") String mediaType, @PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
       throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
-    if (mediaType.equals(MediaType.APPLICATION_JSON)) {
-      return Response.ok(
-              jsonUtil.schemasToJson(s.allEntries()),
-              MediaType.APPLICATION_JSON).build();
-    } else {
-      return Response.ok(
-              RepositoryUtil.schemasToString(s.allEntries()),
-              MediaType.TEXT_PLAIN).build();
-
-    }
+    Renderer renderer = getRenderer(mediaType);
+    return Response.ok(renderer.renderSchemas(s.allEntries()), renderer.getMediaType()).build();
   }
 
   @GET
   @Path("{subject}/config")
-  public String subjectConfig(@PathParam("subject") String subject) {
+  public String subjectConfig(@HeaderParam("Accept") String mediaType, @PathParam("subject") String subject) {
     Subject s = repo.lookup(subject);
     if (null == s) {
       throw new NotFoundException(MessageStrings.SUBJECT_DOES_NOT_EXIST_ERROR);
     }
     Properties props = new Properties();
     props.putAll(s.getConfig().asMap());
-    StringWriter writer = new StringWriter();
-    try {
-      props.store(writer, null);
-    } catch (IOException e) {
-      // stringWriter can't throw ... but just in case
-      throw new RuntimeException(e);
-    }
-    return writer.toString();
+    return getRenderer(mediaType).renderProperties(props, "Configuration of subject " + subject);
   }
 
   /**
@@ -166,15 +118,13 @@ public class RESTRepository {
    *          the name of the subject
    * @param configParams
    *          the configuration values for the Subject, as form parameters
-   * @return the subject name in a 200 response if successful. HTTP 404 if the
-   *         subject does not exist, or HTTP 409 if there was a conflict
-   *         creating the subject
+   * @return the subject name in a 200 response if successful.
+   *         HTTP 404 if the subject does not exist, or HTTP 409 if there was a conflict creating the subject
    */
   @PUT
   @Path("{subject}")
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-  public Response createSubject(@PathParam("subject") String subject,
-      MultivaluedMap<String, String> configParams) {
+  public Response createSubject(@PathParam("subject") String subject, MultivaluedMap<String, String> configParams) {
     if (null == subject) {
       return Response.status(400).build();
     }
@@ -199,8 +149,8 @@ public class RESTRepository {
    */
   @GET
   @Path("{subject}/latest")
-  public String latest(@PathParam("subject") String subject) {
-    return exists(getSubject(subject).latest()).toString();
+  public String latest(@HeaderParam("Accept") String mediaType, @PathParam("subject") String subject) {
+    return getRenderer(mediaType).renderSchemaEntry(exists(getSubject(subject).latest()), true);
   }
 
   /**
@@ -215,9 +165,10 @@ public class RESTRepository {
    */
   @GET
   @Path("{subject}/id/{id}")
-  public String schemaFromId(@PathParam("subject") String subject,
-      @PathParam("id") String id) {
-    return exists(getSubject(subject).lookupById(id)).getSchema();
+  public String schemaFromId(@HeaderParam("Accept") String mediaType,
+                             @PathParam("subject") String subject, @PathParam("id") String id)
+  {
+    return getRenderer(mediaType).renderSchemaEntry(exists(getSubject(subject).lookupById(id)), false);
   }
 
   /**
@@ -318,41 +269,6 @@ public class RESTRepository {
   @Path("{subject}/integral")
   public String getSubjectIntegralKeys(@PathParam("subject") String subject) {
     return Boolean.toString(getSubject(subject).integralKeys());
-  }
-
-  @GET
-  @Path("/status")
-  public Response getStatus() {
-    Status status = Status.OK;
-    String text = "OK";
-    if (repo instanceof BaseRepository) {
-      try {
-        ((BaseRepository)repo).isValid();
-      } catch (IllegalStateException e) {
-        status = Status.SERVICE_UNAVAILABLE;
-        text = e.getMessage();
-      }
-    } else {
-      text = "N/A";
-    }
-    return Response.status(status).entity(text + " : " + repo.getClass()).build();
-  }
-
-  @GET
-  @Path("/config")
-  public String getConfiguration(@QueryParam("includeDefaults") boolean includeDefaults) {
-    final Properties copyOfProperties = new Properties();
-    if (includeDefaults) {
-      copyOfProperties.putAll(Config.DEFAULTS);
-    }
-    copyOfProperties.putAll(properties);
-    final StringWriter writer = new StringWriter();
-    try {
-      copyOfProperties.store(writer, "Started on " + startDate);
-    } catch (IOException e) {
-      // should never happen
-    }
-    return writer.toString();
   }
 
   private Subject getSubject(String subjectName) {

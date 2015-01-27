@@ -101,8 +101,8 @@ public class TestTypedSchemaRepository {
     }
   }
 
-  private <INNER_REPO extends Repository, ID, SCHEMA, SUBJECT> void testRegistration(
-          INNER_REPO innerRepo,
+  private <ID, SCHEMA, SUBJECT> void testRegistration(
+          Repository innerRepo,
           Converter<ID> convertId,
           Converter<SCHEMA> convertSchema,
           Converter<SUBJECT> convertSubject) {
@@ -114,8 +114,8 @@ public class TestTypedSchemaRepository {
             convertSubject.getClass().getSimpleName() + "): ";
 
     try {
-      TypedSchemaRepository<INNER_REPO, ID, SCHEMA, SUBJECT> repo =
-              new TypedSchemaRepository<INNER_REPO, ID, SCHEMA, SUBJECT>
+      TypedSchemaRepository<ID, SCHEMA, SUBJECT> repo =
+              new TypedSchemaRepository<ID, SCHEMA, SUBJECT>
                       (innerRepo, convertId, convertSchema, convertSubject);
 
       SUBJECT subject1 = convertSubject.fromString("sub1");

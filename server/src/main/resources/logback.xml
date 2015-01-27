@@ -8,11 +8,7 @@
 
   <jmxConfigurator/>
 
-  <property name="schema-repo.logging.logdir"    value="logs" />
-  <property name="schema-repo.logging.filename"  value="schema-repo" />
-  <property name="schema-repo.logging.rootlevel" value="INFO" />
-
-
+  
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss} %-5level [%-40logger{40}] %message%n</pattern>
@@ -23,7 +19,7 @@
   </appender>
 
   <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${schema-repo.logging.logdir}/${schema-repo.logging.filename}.log</file>
+    <file>${schema-repo.logging.logdir:-logs}/${schema-repo.logging.filename:-schema-repo}.log</file>
     <append>true</append>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${schema-repo.logging.filename}.%d{yyyy-MM-dd}.log</fileNamePattern>
@@ -41,7 +37,7 @@
   <logger name="org.apache.http" level="INFO" />
 
 
-  <root level="${schema-repo.logging.rootlevel}">
+  <root level="${schema-repo.logging.rootlevel:-INFO}">
     <appender-ref ref="ROLLING_FILE" />
     <appender-ref ref="CONSOLE" />
   </root>

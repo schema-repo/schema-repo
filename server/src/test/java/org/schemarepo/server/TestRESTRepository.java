@@ -106,7 +106,7 @@ public class TestRESTRepository {
     final String contentType = "Content-Type";
     repo.createSubject("dummy", new MultivaluedMapImpl());
     // null and all-inclusive (* or */*) mediaTypes result in the default configured renderer being used
-    for (String mediaType: new String[] {null, "", "*/*", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"}) {
+    for (String mediaType: new String[] {null, "", "*/*", "text/plain", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"}) {
       Response response;
       try {
         response = repo.allSubjects(mediaType);

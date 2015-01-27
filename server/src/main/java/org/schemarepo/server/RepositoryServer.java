@@ -174,7 +174,9 @@ public class RepositoryServer {
     protected void configureServlets() {
       bind(Connector.class).to(SelectChannelConnector.class);
       serve("/*").with(GuiceContainer.class);
-      bind(RESTRepository.class);
+      bind(MachineOrientedRESTRepository.class);
+      bind(HumanOrientedRESTRepository.class);
+      bind(AuxiliaryRESTRepository.class);
     }
 
     @Provides
@@ -182,7 +184,6 @@ public class RepositoryServer {
     public Server provideServer(
         @Named(Config.JETTY_HOST) String host,
         @Named(Config.JETTY_PORT) Integer port,
-        @Named(Config.JETTY_PATH) String path,
         @Named(Config.JETTY_HEADER_SIZE) Integer headerSize,
         @Named(Config.JETTY_BUFFER_SIZE) Integer bufferSize,
         @Named(Config.JETTY_STOP_AT_SHUTDOWN) Boolean stopAtShutdown,
@@ -206,7 +207,7 @@ public class RepositoryServer {
       FilterHolder holder = new FilterHolder(guiceFilter);
       handler.addFilter(holder, "/*", null);
       handler.addServlet(NoneServlet.class, "/");
-      handler.setContextPath(path);
+      handler.setContextPath("/");
       handler.addLifeCycleListener(new ShutDownListener(repo, gracefulShutdown));
       server.setHandler(handler);
       server.dumpStdErr();

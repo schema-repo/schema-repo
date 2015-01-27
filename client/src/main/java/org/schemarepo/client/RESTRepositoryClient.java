@@ -25,6 +25,8 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -71,6 +73,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private WebResource webResource;
+  private WebResource auxWebResource;
   private JsonUtil jsonUtil;
   private boolean returnNoneOnExceptions;
 
@@ -83,6 +86,11 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
     logger.info(format("Remote exceptions from GET requests will be %s",
             returnNoneOnExceptions ? "swallowed and an 'empty' value returned" : "propagated to the caller"));
     this.webResource = Client.create().resource(url);
+    try {
+      this.auxWebResource = Client.create().resource(new URI(url + "/..").normalize());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Invalid url: " + url, e);
+    }
     this.returnNoneOnExceptions = returnNoneOnExceptions;
     this.jsonUtil = jsonUtil;
   }
@@ -94,10 +102,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       form.putSingle(entry.getKey(), entry.getValue());
     }
 
-    String regSubjectName = webResource.path(subject)
-            .accept(MediaType.TEXT_PLAIN)
-            .type(MediaType.APPLICATION_FORM_URLENCODED)
-            .put(String.class, form);
+    String regSubjectName = webResource.path(subject).type(MediaType.APPLICATION_FORM_URLENCODED).put(String.class, form);
 
     return new RESTSubject(regSubjectName);
   }
@@ -132,14 +137,15 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
   }
 
   public String getStatus() {
-    return webResource.path("status").get(String.class);
+    return auxWebResource.path("status").accept(MediaType.TEXT_PLAIN_TYPE).get(String.class);
   }
 
   public Properties getConfiguration(final boolean includeDefaults) {
     final Properties properties = new Properties();
     try {
-      final String propsData = webResource.path("config")
-          .queryParam("includeDefaults", String.valueOf(includeDefaults)).get(String.class);
+      final String propsData = auxWebResource.path("config")
+          .queryParam("includeDefaults", String.valueOf(includeDefaults))
+          .accept(MediaType.TEXT_PLAIN_TYPE).get(String.class);
       properties.load(new StringReader(propsData));
     } catch (Exception e) {
       logger.error("Failed to fetch config", e);
@@ -165,9 +171,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       String path = getName() + "/config" ;
       SubjectConfig config = null;
       try {
-        String propString = webResource.path(path)
-                .accept(MediaType.TEXT_PLAIN)
-                .get(String.class);
+        String propString = webResource.path(path).get(String.class);
         Properties props = new Properties();
         props.load(new StringReader(propString));
         config = RepositoryUtil.configFromProperties(props);
@@ -198,7 +202,6 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       SchemaEntry schemaEntry = null;
       try {
         String schemaId = webResource.path(path)
-                .accept(MediaType.TEXT_PLAIN)
                 .type(MediaType.TEXT_PLAIN_TYPE)
                 .put(String.class, schema);
         schemaEntry = new SchemaEntry(schemaId, schema);
@@ -222,10 +225,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       String path = getName() + "/schema";
       SchemaEntry schemaEntry = null;
       try {
-        String schemaId = webResource.path(path)
-                .accept(MediaType.TEXT_PLAIN)
-                .type(MediaType.TEXT_PLAIN_TYPE)
-                .post(String.class, schema);
+        String schemaId = webResource.path(path).type(MediaType.TEXT_PLAIN_TYPE).post(String.class, schema);
         schemaEntry = new SchemaEntry(schemaId, schema);
       } catch (RuntimeException e) {
         handleException(e, format("Failed to locate schema %s in subject %s", schema, getName()), true);

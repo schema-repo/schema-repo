@@ -72,8 +72,7 @@ public class Avro1124RESTRepositoryClient extends BaseRepository implements Repo
       form.putSingle(entry.getKey(), entry.getValue());
     }
 
-    String regSubjectName = webResource.path(subject).accept(MediaType.TEXT_PLAIN)
-        .type(MediaType.APPLICATION_FORM_URLENCODED).put(String.class, form);
+    String regSubjectName = webResource.path(subject).type(MediaType.APPLICATION_FORM_URLENCODED).put(String.class, form);
 
     return new RESTSubject(regSubjectName);
   }
@@ -118,8 +117,7 @@ public class Avro1124RESTRepositoryClient extends BaseRepository implements Repo
     public SubjectConfig getConfig() {
       String path = getName() + "/config" ;
       try {
-        String propString = webResource.path(path).accept(MediaType.TEXT_PLAIN)
-            .get(String.class);
+        String propString = webResource.path(path).get(String.class);
         Properties props = new Properties();
         props.load(new StringReader(propString));
         return RepositoryUtil.configFromProperties(props);
@@ -150,8 +148,7 @@ public class Avro1124RESTRepositoryClient extends BaseRepository implements Repo
         throws SchemaValidationException {
       String schemaId;
       try {
-        schemaId = webResource.path(path).accept(MediaType.TEXT_PLAIN)
-            .type(MediaType.TEXT_PLAIN_TYPE).put(String.class, schema);
+        schemaId = webResource.path(path).type(MediaType.TEXT_PLAIN_TYPE).put(String.class, schema);
         return new SchemaEntry(schemaId, schema);
       } catch (UniformInterfaceException e) {
         ClientResponse cr = e.getResponse();
@@ -172,8 +169,7 @@ public class Avro1124RESTRepositoryClient extends BaseRepository implements Repo
       RepositoryUtil.validateSchemaOrSubject(schema);
       String path = getName() + "/schema";
       try {
-        String schemaId = webResource.path(path).accept(MediaType.TEXT_PLAIN)
-            .type(MediaType.TEXT_PLAIN_TYPE).post(String.class, schema);
+        String schemaId = webResource.path(path).type(MediaType.TEXT_PLAIN_TYPE).post(String.class, schema);
         return new SchemaEntry(schemaId, schema);
       } catch (UniformInterfaceException e) {
         return null;

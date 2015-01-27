@@ -18,6 +18,8 @@
 
 package org.schemarepo;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -152,6 +154,22 @@ public final class RepositoryUtil {
     } else {
       return config;
     }
+  }
+
+  /**
+   * Converts properties to string representation
+   * @param props
+   * @param comment optional comment (can be null)
+   * @return String (standard key=value format)
+   */
+  public static String propertiesToString(Properties props, String comment) {
+    StringWriter writer = new StringWriter();
+    try {
+      props.store(writer, comment);
+    } catch (IOException e) {
+      // never happens for StringWriter
+    }
+    return writer.toString();
   }
 
 }

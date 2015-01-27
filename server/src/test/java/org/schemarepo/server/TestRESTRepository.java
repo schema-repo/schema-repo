@@ -26,8 +26,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,11 +40,13 @@ import org.schemarepo.ValidatorFactory;
 import org.schemarepo.json.GsonJsonUtil;
 
 import com.sun.jersey.api.NotFoundException;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class TestRESTRepository {
 
   BaseRepository backendRepo;
   RESTRepository repo;
+  AuxiliaryRESTRepository auxRepo;
 
   @Before
   public void setUp() {
@@ -55,7 +59,8 @@ public class TestRESTRepository {
         super.close();
       }
     };
-    repo = new RESTRepository(backendRepo, new GsonJsonUtil(), properties);
+    repo = new MachineOrientedRESTRepository(backendRepo, new GsonJsonUtil());
+    auxRepo = new AuxiliaryRESTRepository(backendRepo, properties);
   }
 
   @After
@@ -70,7 +75,7 @@ public class TestRESTRepository {
 
   @Test(expected=NotFoundException.class)
   public void testNonExistentSubjectGetConfig() throws Exception {
-    repo.subjectConfig("nothing");
+    repo.subjectConfig(null, "nothing");
   }
 
   @Test
@@ -81,19 +86,52 @@ public class TestRESTRepository {
   @Test
   public void testGetConfig() throws IOException {
     Properties properties = new Properties();
-    properties.load(new StringReader(repo.getConfiguration(false)));
+    properties.load(new StringReader(auxRepo.getConfiguration(null, false).getEntity().toString()));
     assertEquals("value", properties.getProperty("key"));
   }
 
   @Test
   public void testGetStatus() throws Exception {
-    Response response = repo.getStatus();
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    Response response = auxRepo.getStatus();
+    assertEquals(Status.OK.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity().toString().startsWith("OK"));
     backendRepo.close();
-    response = repo.getStatus();
-    assertEquals(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
+    response = auxRepo.getStatus();
+    assertEquals(Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
     assertFalse(response.getEntity().toString().startsWith("OK"));
+  }
+
+  @Test
+  public void testInfluenceOfMediaTypeSuccess() {
+    final String contentType = "Content-Type";
+    repo.createSubject("dummy", new MultivaluedMapImpl());
+    // null and all-inclusive (* or */*) mediaTypes result in the default configured renderer being used
+    for (String mediaType: new String[] {null, "", "*/*", "text/plain", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"}) {
+      Response response;
+      try {
+        response = repo.allSubjects(mediaType);
+      } catch (WebApplicationException e) {
+        response = e.getResponse();
+      }
+      assertEquals(Status.OK.getStatusCode(), response.getStatus());
+      assertEquals(repo.getDefaultMediaType(), response.getMetadata().getFirst(contentType).toString());
+    }
+
+    Response response = repo.allSubjects("application/json");
+    assertEquals(Status.OK.getStatusCode(), response.getStatus());
+    assertEquals("application/json", response.getMetadata().getFirst(contentType).toString());
+  }
+
+  @Test
+  public void testInfluenceOfMediaTypeFailure() {
+    final String contentType = "Content-Type";
+    Response response = null;
+    try {
+      repo.allSubjects("image/jpeg");
+    } catch (WebApplicationException e) {
+      response = e.getResponse();
+    }
+    assertEquals(Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus());
   }
 
 }

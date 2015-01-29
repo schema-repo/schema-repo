@@ -85,7 +85,6 @@ The schema repo's REST server implementation uses Jetty. The defaults below will
     # Jetty configs and their defaults:
     schema-repo.jetty.host=
     schema-repo.jetty.port=2876
-    schema-repo.jetty.path=/schema-repo
     schema-repo.jetty.header.size=16384
     schema-repo.jetty.buffer.size=16384
     schema-repo.jetty.stop-at-shutdown=true

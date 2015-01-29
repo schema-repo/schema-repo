@@ -36,6 +36,10 @@ The schema repo gets configured via a .properties file passed as the first comma
     # FQCN of the validators to use. You can specify zero, one or more than one implementation, all of which need to be prefixed with 'schema-repo.validator.' : 
     schema-repo.validator.my_custom_validator_1=com.xyz.Validator1
     schema-repo.validator.my_custom_validator_2=com.xyz.Validator2
+    schema-repo.validator.my_custom_validator_3=com.xyz.Validator3
+     
+    # Default validators to apply to all new topics where no validators are explicitly specified. Comma-separated list of Validator names (without the 'schema-repo.validator.' prefix).
+    schema-repo.validation.default.validators=my_custom_validator_1,my_custom_validator_2
 
 All configuration properties are injected via Guice. However, you are not obligated to use Guice if you do not wish to. You can also feed the required properties to the various constructors directly by code, if you wish to wire in your own config management solution.
     

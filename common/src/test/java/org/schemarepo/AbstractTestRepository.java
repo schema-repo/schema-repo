@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.schemarepo.config.Config;
 
 /**
  * An abstract JUnit test for thoroughly testing a Repository implementation
@@ -244,7 +245,7 @@ public abstract class AbstractTestRepository<R extends Repository> {
 
   @Test
   public void testValidation() {
-    SubjectConfig conf = new SubjectConfig.Builder().addValidator(ValidatorFactory.REJECT_VALIDATOR).build();
+    SubjectConfig conf = new SubjectConfig.Builder().addValidator(Config.REJECT_VALIDATOR).build();
     // lookup a subject that does not exist, when none do
     Subject none = repo.lookup(VALIDATING);
     Assert.assertNull("non-existent subject lookup should return null", none);

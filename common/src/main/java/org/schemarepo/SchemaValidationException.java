@@ -24,4 +24,8 @@ public class SchemaValidationException extends Exception {
   public SchemaValidationException(String msg) {
     super(msg);
   }
+
+  public SchemaValidationException(String msg, Throwable cause) {
+    super(msg,cause);
+  }
 }

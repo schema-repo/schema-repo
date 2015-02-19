@@ -24,6 +24,7 @@ import java.util.Properties;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import com.google.inject.multibindings.MapBinder;
 import org.schemarepo.CacheRepository;
 import org.schemarepo.Repository;
 import org.schemarepo.RepositoryCache;
@@ -39,6 +40,13 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+
+import org.schemarepo.validation.AlwaysFailValidationStrategy;
+import org.schemarepo.validation.CanBeReadValidationStrategy;
+import org.schemarepo.validation.MutualReadValidationStrategy;
+import org.schemarepo.validation.ValidationStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Module} for configuration based on a set of {@link Properties}
@@ -57,6 +65,8 @@ import com.google.inject.name.Names;
  */
 public class ConfigModule implements Module {
 
+  private final Logger logger = LoggerFactory.getLogger(getClass());
+
   public static void printDefaults(PrintStream writer) {
     writer.println(Config.DEFAULTS);
   }
@@ -72,6 +82,45 @@ public class ConfigModule implements Module {
   @Override
   public void configure(Binder binder) {
     Names.bindProperties(binder, props);
+    registerValidationStrategies(binder);
+    bindSubModules(binder);
+  }
+
+  /**
+   * Registers the included ValidationStrategy implementations with the map of all ValidationStrategies
+   * @param binder
+   *    The binder to register with.
+   */
+  private void registerValidationStrategies(Binder binder) {
+    MapBinder<String,ValidationStrategy> strategyMap = MapBinder.newMapBinder(binder,String.class,ValidationStrategy.class);
+    strategyMap.addBinding(CanBeReadValidationStrategy.class.getCanonicalName()).to(CanBeReadValidationStrategy.class);
+    strategyMap.addBinding(MutualReadValidationStrategy.class.getCanonicalName()).to(MutualReadValidationStrategy.class);
+    strategyMap.addBinding(AlwaysFailValidationStrategy.class.getCanonicalName()).to(AlwaysFailValidationStrategy.class);
+  }
+
+  /**
+   * Binds all configured sub-modules from other plugins. Modules are configured using the prefix ("schema-repo.module.*")
+   * @param binder
+   *    The binder to register with.
+   */
+  private void bindSubModules(Binder binder) {
+    for(String prop : props.stringPropertyNames()) {
+      if (prop.startsWith(Config.MODULE_PREFIX)) {
+        Class<Module> moduleClass;
+        Module configModule = null;
+        try {
+          //noinspection unchecked
+          moduleClass = (Class<Module>)Class.forName(props.getProperty(prop));
+          configModule = moduleClass.getConstructor().newInstance();
+        }
+        catch (Exception e) {
+          logger.error("Exception during binding of sub module " + props.getProperty(prop), e);
+        }
+
+        if (configModule != null)
+          binder.install(configModule);
+      }
+    }
   }
 
   @Provides

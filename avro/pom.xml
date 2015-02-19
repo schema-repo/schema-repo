@@ -50,6 +50,22 @@
       <artifactId>avro</artifactId>
       <version>${avro.version}</version>
     </dependency>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>1</version>
+      <!-- users who choose to use the annotations for Guice/Spring/etc
+       will need to include this, others can ignore -->
+      <optional>true</optional>
+    </dependency>
+      <dependency>
+          <groupId>com.google.inject</groupId>
+          <artifactId>guice</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>com.google.inject.extensions</groupId>
+          <artifactId>guice-multibindings</artifactId>
+      </dependency>
   </dependencies>
 
 </project>

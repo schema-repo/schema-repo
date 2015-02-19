@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.schemarepo.config.Config;
 
 public class TestValidatingSubject {
   private static final String ACCEPT = "accept";
@@ -78,14 +79,14 @@ public class TestValidatingSubject {
   @Test(expected=SchemaValidationException.class)
   public void testCannotRegister() throws SchemaValidationException {
     Subject reject = repo.register(REJECT, new SubjectConfig.Builder()
-      .addValidator(ValidatorFactory.REJECT_VALIDATOR).build());
+      .addValidator(Config.REJECT_VALIDATOR).build());
     reject.register(FOO);
   }
 
   @Test(expected=SchemaValidationException.class)
   public void testCannotRegisterIfLatest() throws SchemaValidationException {
     Subject reject = repo.register(REJECT, new SubjectConfig.Builder()
-      .addValidator(ValidatorFactory.REJECT_VALIDATOR).build());
+      .addValidator(Config.REJECT_VALIDATOR).build());
     reject.registerIfLatest(FOO, null);
   }
 

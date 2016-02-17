@@ -154,7 +154,7 @@ public class Avro1124RESTRepositoryClient extends BaseRepository implements Repo
         ClientResponse cr = e.getResponse();
         if (ClientResponse.Status.fromStatusCode(cr.getStatus()).equals(
             ClientResponse.Status.FORBIDDEN)) {
-          throw new SchemaValidationException("Invalid schema: " + schema);
+          throw new SchemaValidationException("Invalid schema: " + schema + ". Reason: " + cr.getEntity(String.class));
         } else {
           //any other status should return null
           return null;

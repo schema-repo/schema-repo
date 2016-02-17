@@ -195,9 +195,9 @@ public abstract class RESTRepository extends BaseRESTRepository {
    *          The subject name to register the schema in
    * @param schema
    *          The schema to register
-   * @return A 200 response with the corresponding id if successful, a 403
-   *         forbidden response if the schema fails validation, or a 404 not
-   *         found response if the subject does not exist
+   * @return A 200 response with the corresponding id if successful,
+   *         a 403 forbidden response with exception message if the schema fails validation,
+   *         or a 404 not found response if the subject does not exist
    */
   @PUT
   @Path("{subject}/register")
@@ -206,7 +206,7 @@ public abstract class RESTRepository extends BaseRESTRepository {
     try {
       return Response.ok(getSubject(subject).register(schema).getId()).build();
     } catch (SchemaValidationException e) {
-      return Response.status(Status.FORBIDDEN).build();
+      return Response.status(Status.FORBIDDEN).entity(e.getMessage()).build();
     }
   }
 
@@ -223,8 +223,8 @@ public abstract class RESTRepository extends BaseRESTRepository {
    *          the schema to attempt to register
    * @return a 200 response with the id of the newly registered schema, or a 404
    *         response if the subject or id does not exist or a 409 conflict if
-   *         the id does not match the latest id or a 403 forbidden response if
-   *         the schema failed validation
+   *         the id does not match the latest id or a 403 forbidden response
+   *         with exception message if the schema fails validation
    */
   @PUT
   @Path("{subject}/register_if_latest/{latestId: .*}")
@@ -246,7 +246,7 @@ public abstract class RESTRepository extends BaseRESTRepository {
       }
       return Response.ok(created.getId()).build();
     } catch (SchemaValidationException e) {
-      return Response.status(Status.FORBIDDEN).build();
+      return Response.status(Status.FORBIDDEN).entity(e.getMessage()).build();
     }
   }
 

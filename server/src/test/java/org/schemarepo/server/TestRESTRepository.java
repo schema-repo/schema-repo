@@ -18,19 +18,8 @@
 
 package org.schemarepo.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Properties;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
+import com.sun.jersey.api.NotFoundException;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,8 +28,19 @@ import org.schemarepo.InMemoryRepository;
 import org.schemarepo.ValidatorFactory;
 import org.schemarepo.json.GsonJsonUtil;
 
-import com.sun.jersey.api.NotFoundException;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class TestRESTRepository {
 
@@ -134,4 +134,27 @@ public class TestRESTRepository {
     assertEquals(Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus());
   }
 
+  @Test
+  public void testSchemaGetsCreated() {
+    repo.createSubject("dummy", new MultivaluedMapImpl());
+    Response response = repo.addSchema("dummy", "schema");
+    assertEquals(Status.OK.getStatusCode(), response.getStatus());
+  }
+
+  @Test(expected = NotFoundException.class)
+  public void testSchemaFailsCreationOnMissingSubject() {
+    repo.addSchema("missing", "schema");
+  }
+
+  @Test
+  public void testFailingValidationReportsErrors() {
+    MultivaluedMapImpl configParams = new MultivaluedMapImpl();
+    configParams.putSingle("repo.validators", "repo.reject");
+    repo.createSubject("dummy", configParams);
+
+    Response response = repo.addSchema("dummy", "schema");
+
+    assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+    assertThat((String) response.getEntity(), containsString("repo.validator.reject validator always rejects validation"));
+  }
 }

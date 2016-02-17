@@ -208,7 +208,7 @@ public class RESTRepositoryClient extends BaseRepository implements RepositoryCl
       } catch (UniformInterfaceException e) {
         ClientResponse cr = e.getResponse();
         if (ClientResponse.Status.fromStatusCode(cr.getStatus()).equals(FORBIDDEN)) {
-          throw new SchemaValidationException("Invalid schema: " + schema);
+          throw new SchemaValidationException("Invalid schema: " + schema + ". Reason: " + cr.getEntity(String.class));
         } else {
           //any other status should return null
           handleException(e, format("Failed to register new schema for subject %s", getName()), resourceNotFoundExpected);

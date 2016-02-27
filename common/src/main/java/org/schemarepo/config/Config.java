@@ -28,15 +28,30 @@ import org.schemarepo.json.GsonJsonUtil;
  */
 public class Config {
   // General Schema Repo configs
-  private static final String GLOBAL_PREFIX = "schema-repo.";
+  public static final String GLOBAL_PREFIX = "schema-repo.";
   public static final String REPO_CLASS = GLOBAL_PREFIX + "class";
   public static final String REPO_CACHE = GLOBAL_PREFIX + "cache";
+
+  // MODULE_PREFIX is prefix for plugin modules to register in main config module.
+  // used to register additional validation strategies.
+  public static final String MODULE_PREFIX = GLOBAL_PREFIX + "module.";
+
+  // VALIDATOR_PREFIX is prefix for Validator classes to load
   public static final String VALIDATOR_PREFIX = GLOBAL_PREFIX + "validator.";
+
+  // Restricted Internal "REJECT_VALIDATOR" used by ValidatorFactory
+  public static final String REJECT_VALIDATOR = GLOBAL_PREFIX + "reject-validator";
 
   // Validation class related configs
   public static final String VALIDATION_PREFIX = GLOBAL_PREFIX + "validation.";
   // The default list of validator names (not including prefix) to use for validating subjects.
   public static final String DEFAULT_SUBJECT_VALIDATORS = VALIDATION_PREFIX + "default.validators";
+  // The implementation of the basic "CanRead" validation strategy. The CanBeRead and MutualRead strategies are built from this.
+  public static final String VALIDATION_READ_STRATEGY_CLASS = VALIDATION_PREFIX + "can-read.strategy.class";
+  // names for strategies for the two included Validators (so a different strategy can be used for each)
+  public static final String VALIDATION_ALL_VALIDATOR_STRATEGY = VALIDATION_PREFIX + "all-validator.strategy.class";
+  public static final String VALIDATION_LATEST_VALIDATOR_STRATEGY = VALIDATION_PREFIX + "latest-validator.strategy.class";
+
 
   // Jetty configs
   private static final String JETTY_PREFIX = GLOBAL_PREFIX + "jetty.";
@@ -89,6 +104,9 @@ public class Config {
     DEFAULTS.setProperty(JETTY_GRACEFUL_SHUTDOWN, "3000");
 
     DEFAULTS.setProperty(DEFAULT_SUBJECT_VALIDATORS,"");
+
+    // Validation defaults. The read strategy class is "Always Fail" unless configured.
+    DEFAULTS.setProperty(VALIDATION_READ_STRATEGY_CLASS, "org.schemarepo.validation.AlwaysFailValidationStrategy");
 
     // Logging defaults
     DEFAULTS.setProperty(LOGGING_ROUTE_JUL_TO_SLF4J, "true");

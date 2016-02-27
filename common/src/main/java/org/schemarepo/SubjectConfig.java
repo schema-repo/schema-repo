@@ -18,6 +18,8 @@
 
 package org.schemarepo;
 
+import org.schemarepo.config.Config;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,13 +31,12 @@ import java.util.Set;
  * A {@link SubjectConfig} is effectively a Map<String, String> , with reserved
  * keys and default values for certain keys.
  * <br/>
- * Keys starting with "repo." are reserved.
+ * Keys starting with "schema-repo." are reserved.
  *
  */
 public class SubjectConfig {
   private static final SubjectConfig EMPTY = new Builder().build();
-  private static final String RESERVED_PREFIX = "repo.";
-  public static final String VALIDATORS_KEY = "repo.validators";
+  public static final String VALIDATORS_KEY = Config.VALIDATOR_PREFIX + "validators";
 
   private final Map<String, String> conf;
   private final Set<String> validators;
@@ -83,6 +84,7 @@ public class SubjectConfig {
   }
 
   public static class Builder {
+    private static final String RESERVED_PREFIX = Config.GLOBAL_PREFIX;
 
     private final HashMap<String, String> conf = new HashMap<String, String>();
     private final HashSet<String> validators = new HashSet<String>();

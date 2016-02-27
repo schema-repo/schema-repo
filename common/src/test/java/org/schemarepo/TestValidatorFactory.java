@@ -22,6 +22,7 @@ import java.util.HashSet;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.schemarepo.config.Config;
 
 
 public class TestValidatorFactory {
@@ -47,7 +48,7 @@ public class TestValidatorFactory {
   @Test(expected=RuntimeException.class)
   public void testInvalidName() {
     new ValidatorFactory.Builder()
-      .setValidator("repo.willBreak", null);
+      .setValidator(Config.GLOBAL_PREFIX + "willBreak", null);
   }
 
 }

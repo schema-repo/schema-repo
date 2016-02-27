@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.schemarepo.config.Config;
 
 
 public class TestSubjectConfig {
@@ -33,7 +34,7 @@ public class TestSubjectConfig {
 
     SubjectConfig custom = new SubjectConfig.Builder()
       .set("k", "v")
-      .set("repo.validators", "valid1, valid2 ,,")
+      .set(SubjectConfig.VALIDATORS_KEY, "valid1, valid2 ,,")
       .addValidator("oneMore")
       .build();
 
@@ -52,7 +53,7 @@ public class TestSubjectConfig {
     SubjectConfig conf = new SubjectConfig.Builder().build();
     Assert.assertEquals(empty, conf);
     SubjectConfig conf2 = new SubjectConfig.Builder()
-      .set("repo.validators", null)
+      .set(SubjectConfig.VALIDATORS_KEY, null)
       .build();
 
     // Explicitly setting empty or null validators is NOT the same as no validators
@@ -83,7 +84,7 @@ public class TestSubjectConfig {
   @Test(expected=RuntimeException.class)
   public void testInvalidConfigName() {
     new SubjectConfig.Builder()
-    .set("repo.notValid", "");
+    .set(Config.GLOBAL_PREFIX + "notValid", "");
   }
 
 }

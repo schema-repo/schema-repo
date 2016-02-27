@@ -34,7 +34,7 @@ package org.schemarepo;
  *     only the version one prior to the current version.
  *     e.g. a reader with the second most recent schema
  *     is able to read data written with the most recent schema</li>
- * <li>N+1 Compatibility: Backward compatibility constrained to
+ * <li>N-1 Compatibility: Backward compatibility constrained to
  *     only the version one prior to the current version.
  *     e.g. a reader with the most recent schema
  *     is able to read data written with the second most recent schema</li>

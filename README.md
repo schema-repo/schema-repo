@@ -1,4 +1,4 @@
-# Schema Repo
+#Schema Repo
 
 The schema repo is a RESTful web service for storing and serving mappings between schema identifiers and schema definitions. Those mappings are meant to be immutable, since data serialized with a given identifier should be de-serializable forever.
 
